@@ -1,0 +1,52 @@
+<?php
+
+namespace App\Utils;
+
+class Langues
+{
+   public static $LISTELANGUES = [
+      'Francais' => 'Francais',
+      'Anglais' => 'Anglais',
+      'Espagnol' => 'Espagnol',
+      'Allemand' => 'Allemand',
+      'Italien' => 'Italien',
+      'Portugais' => 'Portugais',
+      'Chinois' => 'Chinois',
+      'Japonais' => 'Japonais',
+      'Russe' => 'Russe',
+      'Arabe' => 'Arabe',
+      'Swahili' => 'Swahili',
+      'Wolof' => 'Wolof',
+      'Yoruba' => 'Yoruba',
+      'Hausa' => 'Hausa',
+      'Amharic' => 'Amharic',
+      'Zulu' => 'Zulu',
+      'Xhosa' => 'Xhosa',
+      'Bambara' => 'Bambara',
+      'Peul (Fula)' => 'Peul (Fula)',
+      'Lingala' => 'Lingala',
+      'Igbo' => 'Igbo',
+      'Somali' => 'Somali',
+      'Shona' => 'Shona',
+      'Oromo' => 'Oromo',
+      'Kinyarwanda' => 'Kinyarwanda',
+      'Kirundi' => 'Kirundi',
+      'Sango' => 'Sango',
+      'Ewe' => 'Ewe',
+      'Fon' => 'Fon',
+      'Malagasy' => 'Malagasy',
+      'Twi' => 'Twi',
+      'Luganda' => 'Luganda',
+      'Tswana' => 'Tswana',
+      'Sotho' => 'Sotho',
+      'Baoule' => 'Baoule',
+      'Bete' => 'Bete',
+      'Dioula' => 'Dioula',
+      'Mossi' => 'Mossi',
+      'Moore' => 'Moore',
+      'Susu' => 'Susu',
+      'Maninka' => 'Maninka',
+      'Kikongo' => 'Kikongo',
+      'Tshiluba' => 'Tshiluba',
+   ];
+}
