@@ -91,8 +91,6 @@ class AdminPanelProvider extends PanelProvider
                     ->shouldShowMultiFactorAuthentication()
                     ->shouldShowBrowserSessionsForm()
                     ->shouldShowAvatarForm(),
-                FilamentAwinTheme::make()
-                ->primaryColor(Color::Blue)
             ])
             ->authMiddleware([
                 Authenticate::class,

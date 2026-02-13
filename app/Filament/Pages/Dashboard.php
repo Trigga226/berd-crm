@@ -9,7 +9,7 @@ use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\DatePicker;
-use App\utils\Pays;
+use App\Utils\Pays;
 use App\Utils\Domaines;
 
 class Dashboard extends BaseDashboard

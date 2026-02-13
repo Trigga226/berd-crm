@@ -55,10 +55,7 @@ class ProjectStatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-o-exclamation-triangle')
                 ->color('warning'),
 
-            Stat::make('Dépassement Budget', $stats['over_budget'])
-                ->description('Projets au-dessus du budget')
-                ->descriptionIcon('heroicon-o-currency-euro')
-                ->color('danger'),
+            
 
             Stat::make('Budget Total', number_format($stats['total_budget'], 0, ',', ' ') . ' XOF')
                 ->description(number_format($stats['consumed_budget'], 0, ',', ' ') . ' XOF consommés (' . round($stats['budget_utilization'], 1) . '%)')
