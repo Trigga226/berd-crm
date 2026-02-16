@@ -36,7 +36,14 @@ class UserInfolist
                                 'admin' => 'danger',
                                 'manager' => 'warning',
                                 default => 'success',
-                            }),
+                            })->state(function ($record) {
+                        $role = $record->roles->first();
+                        if ($role->name === "super_admin") {
+                            return "Admin";
+                        } else {
+                            return $role->name;
+                        }
+                    }),
 
                         TextEntry::make('num_poste')
                             ->label('Numéro de poste')
