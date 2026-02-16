@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Offers\Schemas;
 use App\Filament\Resources\Clients\Schemas\ClientForm;
 use App\Models\Client; // Add this import for client lookup
 use App\Models\Manifestation;
-use App\utils\Pays;
+use App\Utils\Pays;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Manifestations\Tables;
 
+use App\Utils\Pays;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -63,7 +64,7 @@ class ManifestationsTable
                     ]),
                 \Filament\Tables\Filters\SelectFilter::make('country')
                     ->label('Pays')
-                    ->options(\App\utils\Pays::$LISTEPAYS)
+                    ->options(Pays::$LISTEPAYS)
                     ->searchable(),
                 \Filament\Tables\Filters\SelectFilter::make('submission_mode')
                     ->label('Mode de Dépôt')

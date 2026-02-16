@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Clients\Tables;
 
+use App\Utils\Pays;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -69,7 +70,7 @@ class ClientsTable
                     ]),
                 \Filament\Tables\Filters\SelectFilter::make('country')
                     ->label('Pays')
-                    ->options(\App\utils\Pays::$LISTEPAYS)
+                    ->options(Pays::$LISTEPAYS)
                     ->searchable(),
                 TrashedFilter::make()->visible(Auth::user()->email==="franck.b@berd-ing.com"),
             ])

@@ -14,7 +14,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TagsInput;
 use Filament\Schemas\Schema;
-use App\utils\Pays;
+use App\Utils\Pays;
 
 class PartnerForm
 {

@@ -9,7 +9,7 @@ use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Schema;
-use App\utils\Pays;
+use App\Utils\Pays;
 
 class ClientForm
 {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Partners\Tables;
 
+use App\Utils\Pays;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -73,7 +74,7 @@ class PartnersTable
                     ]),
                 \Filament\Tables\Filters\SelectFilter::make('country')
                     ->label('Pays')
-                    ->options(\App\utils\Pays::$LISTEPAYS)
+                    ->options(Pays::$LISTEPAYS)
                     ->searchable(),
                 TrashedFilter::make(),
             ])

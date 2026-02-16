@@ -13,7 +13,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Hidden;
 use Filament\Schemas\Schema;
-use App\utils\Pays;
+use App\Utils\Pays;
 
 class ManifestationForm
 {
