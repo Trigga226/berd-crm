@@ -16,6 +16,6 @@ export default defineConfig({
         },
     },
     input:[
-        'vendor/resma/filament-awin-theme/resources/css/theme.css'
+    'vendor/resma/filament-awin-theme/resources/css/theme.css'
     ],
 });
