@@ -25,14 +25,7 @@ class ManifestationForm
                     ->icon('heroicon-o-information-circle')
                     ->collapsible()
                     ->schema([
-                        TextInput::make('score')
-                            ->label('Note')
-                            ->numeric()
-                            ->maxValue(100)
-                            ->suffix('/100'),
-                        \Filament\Forms\Components\Textarea::make('observation')
-                            ->label('Observation')
-                            ->columnSpanFull(),
+                        
                         Select::make('avis_manifestation_id')
                             ->label('Avis de Manifestation')
                             ->relationship('avisManifestation', 'title')
@@ -90,6 +83,15 @@ class ManifestationForm
                                 'physical' => 'Physique',
                                 'email' => 'Email',
                             ]),
+
+                            TextInput::make('score')
+                            ->label('Note')
+                            ->numeric()
+                            ->maxValue(100)
+                            ->suffix('/100'),
+                        \Filament\Forms\Components\Textarea::make('observation')
+                            ->label('Observation')
+                            ->columnSpanFull(),
                     ])->columns(2),
 
                 Section::make('Équipe')
