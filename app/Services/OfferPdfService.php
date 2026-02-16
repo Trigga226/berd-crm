@@ -9,6 +9,8 @@ use setasign\Fpdi\PdfParser\StreamReader;
 
 class OfferPdfService
 {
+    protected array $tempFiles = [];
+
     protected array $technicalOrder = [
         'tech_cover',
         'tech_summary',
@@ -66,6 +68,20 @@ class OfferPdfService
 
                 try {
                     $pageCount = $pdf->setSourceFile($fullPath);
+                } catch (\Exception $e) {
+                    // Attempt normalization if likely due to version/compression
+                    try {
+                        $tempPath = $this->convertPdfTo14($fullPath);
+                        $this->tempFiles[] = $tempPath;
+                        $pageCount = $pdf->setSourceFile($tempPath);
+                    } catch (\Exception $conversionError) {
+                        // If conversion fails, log original error
+                        \Illuminate\Support\Facades\Log::error("Failed to merge PDF: {$path}. Error: " . $e->getMessage());
+                        continue;
+                    }
+                }
+
+                try {
                     for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
                         $templateId = $pdf->importPage($pageNo);
                         $pdf->AddPage();
@@ -73,9 +89,15 @@ class OfferPdfService
                     }
                     $filesFound++;
                 } catch (\Exception $e) {
-                    // Log error or ignore invalid PDF
-                    // Log::warning("Could not merge PDF: $path - " . $e->getMessage());
+                    \Illuminate\Support\Facades\Log::error("Failed to import pages from: {$path}. Error: " . $e->getMessage());
                 }
+            }
+        }
+
+        // Cleanup temp files
+        foreach ($this->tempFiles as $file) {
+            if (file_exists($file)) {
+                unlink($file);
             }
         }
 
@@ -86,5 +108,24 @@ class OfferPdfService
         return response()->streamDownload(function () use ($pdf) {
             $pdf->Output('D', 'merged.pdf'); // Output to string or stream
         }, $outputName);
+    }
+
+    protected function convertPdfTo14(string $originalPath): string
+    {
+        $tempPath = tempnam(sys_get_temp_dir(), 'pdf_14_') . '.pdf';
+
+        $command = sprintf(
+            'gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=%s %s',
+            escapeshellarg($tempPath),
+            escapeshellarg($originalPath)
+        );
+
+        exec($command, $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            throw new \Exception("Ghostscript conversion failed with exit code $returnCode");
+        }
+
+        return $tempPath;
     }
 }

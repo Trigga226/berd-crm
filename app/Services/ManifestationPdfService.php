@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ManifestationPdfService
 {
+    protected array $tempFiles = [];
+
     public function generate(Manifestation $manifestation): string
     {
         $pdf = new Fpdi();
@@ -56,6 +58,13 @@ class ManifestationPdfService
 
         $manifestation->update(['generated_file_path' => $fileName]);
 
+        // Cleanup temp files
+        foreach ($this->tempFiles as $file) {
+            if (file_exists($file)) {
+                unlink($file);
+            }
+        }
+
         return $fileName;
     }
 
@@ -69,14 +78,42 @@ class ManifestationPdfService
 
         try {
             $pageCount = $pdf->setSourceFile($fullPath);
-            for ($page = 1; $page <= $pageCount; $page++) {
-                $templateId = $pdf->importPage($page);
-                $pdf->AddPage();
-                $pdf->useTemplate($templateId);
-            }
         } catch (\Exception $e) {
-            // Log error or ignore invalid PDF
-            \Illuminate\Support\Facades\Log::error("Failed to merge PDF: {$path}. Error: " . $e->getMessage());
+            // Attempt normalization if likely due to version/compression
+            try {
+                $tempPath = $this->convertPdfTo14($fullPath);
+                $this->tempFiles[] = $tempPath;
+                $pageCount = $pdf->setSourceFile($tempPath);
+            } catch (\Exception $conversionError) {
+                // If conversion fails, log original error
+                \Illuminate\Support\Facades\Log::error("Failed to merge PDF: {$path}. Error: " . $e->getMessage());
+                return;
+            }
         }
+
+        for ($page = 1; $page <= $pageCount; $page++) {
+            $templateId = $pdf->importPage($page);
+            $pdf->AddPage();
+            $pdf->useTemplate($templateId);
+        }
+    }
+
+    protected function convertPdfTo14(string $originalPath): string
+    {
+        $tempPath = tempnam(sys_get_temp_dir(), 'pdf_14_') . '.pdf';
+
+        $command = sprintf(
+            'gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=%s %s',
+            escapeshellarg($tempPath),
+            escapeshellarg($originalPath)
+        );
+
+        exec($command, $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            throw new \Exception("Ghostscript conversion failed with exit code $returnCode");
+        }
+
+        return $tempPath;
     }
 }
