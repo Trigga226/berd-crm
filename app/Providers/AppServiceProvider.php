@@ -48,7 +48,8 @@ class AppServiceProvider extends ServiceProvider
             'ProjectReport',
             'ProjectRisk',
             'TechnicalOffer',
-            'User'
+            'User',
+            'Archive'
         ];
 
         foreach ($models as $model) {
