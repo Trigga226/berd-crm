@@ -14,6 +14,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Filters\TrashedFilter;
+use Illuminate\Support\Facades\Auth;
 
 class ProjectsTable
 {
@@ -117,6 +119,8 @@ class ProjectsTable
                                 fn(Builder $query, $date): Builder => $query->whereDate('planned_end_date', '<=', $date),
                             );
                     }),
+
+                    TrashedFilter::make()->visible(Auth::user()->email==="franck.b@berd-ing.com"),
             ])
             ->actions([
                 ViewAction::make(),
