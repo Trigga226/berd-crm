@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Slimani\MediaManager\Concerns\InteractsWithMediaFiles;
 
 class Archive extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, InteractsWithMediaFiles;
+
     protected $fillable = [
         'titre',
         'type',
@@ -20,5 +22,6 @@ class Archive extends Model
 
     protected $casts = [
         'fichier' => 'array',
+        'date_archive' => 'date',
     ];
 }

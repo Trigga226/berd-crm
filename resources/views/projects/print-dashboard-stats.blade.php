@@ -174,6 +174,43 @@
         .print-btn:hover {
             background: #2563eb;
         }
+
+        /* Risk Matrix Table */
+        .risk-matrix {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .risk-matrix td {
+            border: 1px solid #e5e7eb;
+            width: 33.33%;
+            height: 60px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .risk-label { font-size: 10px; color: #6b7280; font-style: italic; }
+        .bg-crit { background-color: #fee2e2; color: #991b1b; }
+        .bg-mod { background-color: #fef3c7; color: #92400e; }
+        .bg-low { background-color: #dcfce7; color: #166534; }
+
+        /* Timeline Table */
+        .timeline-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .timeline-table th {
+            text-align: left;
+            background: #f9fafb;
+            padding: 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .timeline-table td {
+            padding: 8px;
+            border-bottom: 1px solid #f3f4f6;
+        }
     </style>
 </head>
 <body>
@@ -315,14 +352,67 @@
                     <div class="stat-value" style="color: #f59e0b;">{{ $projectStats['delayed'] }}</div>
                     <div class="stat-label">En Retard</div>
                 </div>
-                <div class="stat-card" style="grid-column: span 2; background: #f9fafb;">
+                <div class="stat-card" style="background: #f9fafb;">
                     <div class="stat-value">{{ number_format($projectStats['total_budget'], 0, ',', ' ') }} <small>XOF</small></div>
                     <div class="stat-label">Budget Total</div>
-                    <div class="stat-desc">
-                        {{ number_format($projectStats['consumed_budget'], 0, ',', ' ') }} XOF consommés
-                        ({{ round($projectStats['budget_utilization'], 1) }}%)
-                    </div>
                 </div>
+                <div class="stat-card" style="background: #ecfdf5; border-color: #10b981;">
+                    <div class="stat-value" style="color: #047857;">{{ round($financialStats['recovery_rate'], 1) }}%</div>
+                    <div class="stat-label">Taux Recouvrement</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="module-section">
+        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px;">
+            <div>
+                <div class="section-title">Matrice Globale des Risques</div>
+                <table class="risk-matrix">
+                    <tr>
+                        <td class="bg-mod">{{ $riskMatrix['high']['low'] }}</td>
+                        <td class="bg-crit">{{ $riskMatrix['high']['medium'] }}</td>
+                        <td class="bg-crit">{{ $riskMatrix['high']['high'] }}</td>
+                    </tr>
+                    <tr>
+                        <td class="bg-mod">{{ $riskMatrix['medium']['low'] }}</td>
+                        <td class="bg-mod">{{ $riskMatrix['medium']['medium'] }}</td>
+                        <td class="bg-crit">{{ $riskMatrix['medium']['high'] }}</td>
+                    </tr>
+                    <tr>
+                        <td class="bg-low">{{ $riskMatrix['low']['low'] }}</td>
+                        <td class="bg-mod">{{ $riskMatrix['low']['medium'] }}</td>
+                        <td class="bg-mod">{{ $riskMatrix['low']['high'] }}</td>
+                    </tr>
+                </table>
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 5px; font-size: 8px;">
+                    <span class="bg-low" style="padding: 2px 5px;">Faible</span>
+                    <span class="bg-mod" style="padding: 2px 5px;">Modéré</span>
+                    <span class="bg-crit" style="padding: 2px 5px;">Critique</span>
+                </div>
+            </div>
+            <div>
+                <div class="section-title">Timeline des Livrables à Venir</div>
+                <table class="timeline-table">
+                    <thead>
+                        <tr>
+                            <th>Projet</th>
+                            <th>Livrable</th>
+                            <th>Date Prévue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($upcomingDeliverables as $deliv)
+                        <tr>
+                            <td style="font-weight: bold;">{{ $deliv->project->code ?? 'N/A' }}</td>
+                            <td>{{ $deliv->title }}</td>
+                            <td style="color: {{ $deliv->planned_date?->isPast() ? '#ef4444' : 'inherit' }}">
+                                {{ $deliv->planned_date?->format('d/m/Y') }}
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

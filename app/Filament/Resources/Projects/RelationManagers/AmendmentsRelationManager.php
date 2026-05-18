@@ -60,6 +60,7 @@ class AmendmentsRelationManager extends RelationManager
                     ->numeric()->required(),
                 FileUpload::make('file_path')
                     ->label('Avenant (PDF)')
+                    ->disk('local')
                     ->acceptedFileTypes(['application/pdf'])
                     ->directory('amendments')
                     ->downloadable()
@@ -124,7 +125,7 @@ class AmendmentsRelationManager extends RelationManager
                 TextColumn::make('file_path')
                     ->label('Document')
                     ->formatStateUsing(fn() => 'Télécharger')
-                    ->url(fn($record) => $record->file_path ? asset('storage/' . $record->file_path) : null)
+                    ->url(fn($record) => $record->file_path ? route('private.file.show', ['path' => $record->file_path]) : null)
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('primary')
@@ -159,8 +160,23 @@ class AmendmentsRelationManager extends RelationManager
                 ]));
     }
 
+    protected function canCreate(): bool
+    {
+        return Auth::user()->can('create', \App\Models\ProjectAmendment::class);
+    }
+
     protected function canEdit(Model $record): bool
     {
-        return Auth::user()->hasRole('Charge') || Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Gerant') || Auth::user()->hasRole('secretaire de direction') || Auth::user()->hasRole('Assistant charge');
+        return Auth::user()->can('update', $record);
+    }
+
+    protected function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete', $record);
+    }
+
+    protected function canDeleteAny(): bool
+    {
+        return Auth::user()->can('deleteAny', \App\Models\ProjectAmendment::class);
     }
 }

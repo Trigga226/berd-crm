@@ -24,6 +24,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Joaopaulolndev\FilamentEditProfile\FilamentEditProfilePlugin;
 use Joaopaulolndev\FilamentEditProfile\Pages\EditProfilePage;
 use Resma\FilamentAwinTheme\FilamentAwinTheme;
+use Slimani\MediaManager\MediaManagerPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -37,8 +38,9 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Blue,
             ])
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->databaseNotifications()
-            ->databaseNotificationsPolling('30s')
+            ->databaseNotificationsPolling('2m')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -91,8 +93,14 @@ class AdminPanelProvider extends PanelProvider
                     ->shouldShowMultiFactorAuthentication()
                     ->shouldShowBrowserSessionsForm()
                     ->shouldShowAvatarForm(),
-                FilamentAwinTheme::make()
-                    ->primaryColor(Color::Blue)
+
+                MediaManagerPlugin::make()
+                    ->navigationGroup('System')
+                    ->navigationLabel('Assets')
+                    ->navigationIcon('heroicon-o-folder')
+                    ->navigationSort(5)
+
+
             ])
             ->authMiddleware([
                 Authenticate::class,

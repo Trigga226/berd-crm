@@ -13,21 +13,25 @@ class SendProjectNotifications extends Command
 
     protected $description = 'Envoie des notifications pour les projets en retard ou avec dépassement budgétaire';
 
+    public function __construct(private readonly ProjectService $service)
+    {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
-        $service = new ProjectService();
 
         // Récupérer les projets en retard
-        $delayedProjects = $service->getDelayedProjects();
+        $delayedProjects = $this->service->getDelayedProjects();
 
         // Récupérer les projets avec dépassement budgétaire
-        $overBudgetProjects = $service->getOverBudgetProjects();
+        $overBudgetProjects = $this->service->getOverBudgetProjects();
 
         // Récupérer les livrables en retard
-        $delayedDeliverables = $service->getDelayedDeliverables();
+        $delayedDeliverables = $this->service->getDelayedDeliverables();
 
         // Récupérer les factures impayées
-        $overdueInvoices = $service->getOverdueInvoices();
+        $overdueInvoices = $this->service->getOverdueInvoices();
 
         $notificationCount = 0;
 
@@ -48,7 +52,7 @@ class SendProjectNotifications extends Command
             $this->sendNotificationToProjectManager(
                 $project,
                 'Dépassement Budgétaire',
-                "Le projet \"{$project->title}\" a dépassé son budget de " . number_format($variance, 0, ',', ' ') . " €.",
+                "Le projet \"{$project->title}\" a dépassé son budget de " . number_format($variance, 0, ',', ' ') . " FCFA.",
                 'danger'
             );
             $notificationCount++;
@@ -70,7 +74,7 @@ class SendProjectNotifications extends Command
             $this->sendNotificationToProjectManager(
                 $invoice->project,
                 'Facture Impayée',
-                "La facture {$invoice->invoice_number} du projet \"{$invoice->project->title}\" est en retard de paiement (" . number_format($invoice->remainingAmount(), 0, ',', ' ') . " € restants).",
+                "La facture {$invoice->invoice_number} du projet \"{$invoice->project->title}\" est en retard de paiement (" . number_format($invoice->remainingAmount(), 0, ',', ' ') . " FCFA restants).",
                 'warning'
             );
             $notificationCount++;
@@ -92,8 +96,8 @@ class SendProjectNotifications extends Command
                 ->sendToDatabase($project->projectManagerUser);
         }
 
-        // Envoyer également aux administrateurs
-        $admins = User::where('is_admin', true)->get();
+        // Envoyer également aux administrateurs (Super Admin et Gérants)
+        $admins = User::role(['super_admin', 'Gerant'])->get();
         foreach ($admins as $admin) {
             Notification::make()
                 ->title($title)

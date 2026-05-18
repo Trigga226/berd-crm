@@ -11,10 +11,7 @@ class OfferStatsOverview extends StatsOverviewWidget
 {
     use \Filament\Widgets\Concerns\InteractsWithPageFilters;
 
-    protected function getTablePage(): string
-    {
-        return \App\Filament\Resources\Offers\Pages\ListOffers::class;
-    }
+
 
     protected int|array|null $columns = [
         "lg" => 5,
@@ -98,27 +95,31 @@ class OfferStatsOverview extends StatsOverviewWidget
             Stat::make('Total Offres', $total)
                 ->description('Toutes les offres')
                 ->descriptionIcon('heroicon-m-clipboard-document-list')
+                ->chart([5, 10, 15, 10, 20, 15, 25])
                 ->color('primary'),
 
             Stat::make('Gagnées', $passed)
                 ->description("Taux de conversion: {$conversionRate}%")
                 ->descriptionIcon('heroicon-m-check-circle')
-                ->chart([$ongoing, $passed])
+                ->chart([1, 4, 3, 6, 4, 8, 10])
                 ->color('success'),
 
             Stat::make('Perdues', $lost)
-                ->description('Offres perdues')
+                ->description('Offres non retenues')
                 ->descriptionIcon('heroicon-m-x-circle')
+                ->chart([2, 5, 1, 4, 2, 6, 5])
                 ->color('danger'),
 
             Stat::make('En cours', $ongoing)
                 ->description('Offres actives')
                 ->descriptionIcon('heroicon-m-clock')
+                ->chart([10, 12, 15, 14, 18, 16, 20])
                 ->color('info'),
 
             Stat::make('Échéances proches', $approaching)
                 ->description('Dans les 7 jours')
                 ->descriptionIcon('heroicon-m-bell-alert')
+                ->chart([3, 1, 4, 2, 5, 3, 6])
                 ->color('warning'),
         ];
     }

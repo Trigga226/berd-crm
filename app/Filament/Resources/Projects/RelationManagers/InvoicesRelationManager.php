@@ -15,6 +15,7 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use App\Services\ProjectInvoicePdfService;
 
 class InvoicesRelationManager extends RelationManager
 {
@@ -74,6 +76,7 @@ class InvoicesRelationManager extends RelationManager
                     ->default(0),
                 FileUpload::make('file_path')
                     ->label('Facture (PDF)')
+                    ->disk('local')
                     ->acceptedFileTypes(['application/pdf'])
                     ->directory('invoices')
                     ->downloadable()
@@ -149,7 +152,7 @@ class InvoicesRelationManager extends RelationManager
                 TextColumn::make('file_path')
                     ->label('Document')
                     ->formatStateUsing(fn() => 'Télécharger')
-                    ->url(fn($record) => $record->file_path ? asset('storage/' . $record->file_path) : null)
+                    ->url(fn($record) => $record->file_path ? route('private.file.show', ['path' => $record->file_path]) : null)
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('primary')
@@ -165,6 +168,12 @@ class InvoicesRelationManager extends RelationManager
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                Action::make('generatePdf')
+                    ->label('Générer PDF')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('success')
+                    ->action(fn (Model $record) => app(ProjectInvoicePdfService::class)->generate($record))
+                    ->visible(fn (Model $record) => $record->invoice_number !== null),
                 DissociateAction::make(),
                 DeleteAction::make(),
                 ForceDeleteAction::make(),
@@ -186,31 +195,26 @@ class InvoicesRelationManager extends RelationManager
 
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
-        $user = Auth::user();
-        return $user->hasRole('Comptable') || $user->hasRole('super_admin') || $user->hasRole('Gerant');
+        return Auth::user()->can('viewAny', \App\Models\ProjectInvoice::class);
     }
 
     protected function canCreate(): bool
     {
-        $user = Auth::user();
-        return $user->hasRole('Comptable') || $user->hasRole('super_admin') || $user->hasRole('Gerant');
+        return Auth::user()->can('create', \App\Models\ProjectInvoice::class);
     }
 
     protected function canEdit(Model $record): bool
     {
-        $user = Auth::user();
-        return $user->hasRole('Comptable') || $user->hasRole('super_admin') || $user->hasRole('Gerant');
+        return Auth::user()->can('update', $record);
     }
 
     protected function canDelete(Model $record): bool
     {
-        $user = Auth::user();
-        return $user->hasRole('Comptable') || $user->hasRole('super_admin') || $user->hasRole('Gerant');
+        return Auth::user()->can('delete', $record);
     }
 
     protected function canDeleteAny(): bool
     {
-        $user = Auth::user();
-        return $user->hasRole('Comptable') || $user->hasRole('super_admin') || $user->hasRole('Gerant');
+        return Auth::user()->can('deleteAny', \App\Models\ProjectInvoice::class);
     }
 }

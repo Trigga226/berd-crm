@@ -36,4 +36,35 @@ class Expert extends Model
             ->withPivot('cv_path')
             ->withTimestamps();
     }
+
+    /**
+     * Contrats de projet sur lesquels cet expert est intervenu.
+     */
+    public function projectContracts()
+    {
+        return $this->hasMany(\App\Models\ProjectExpertContract::class);
+    }
+
+    /**
+     * Accède aux projets de cet expert via ses contrats.
+     */
+    public function projects()
+    {
+        return $this->hasManyThrough(
+            \App\Models\Project::class,
+            \App\Models\ProjectExpertContract::class,
+            'expert_id',
+            'id',
+            'id',
+            'project_id'
+        );
+    }
+
+    /**
+     * Nom complet de l'expert.
+     */
+    public function getFullNameAttribute(): string
+    {
+        return "{$this->first_name} {$this->last_name}";
+    }
 }

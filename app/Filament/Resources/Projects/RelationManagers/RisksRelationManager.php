@@ -23,10 +23,14 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 class RisksRelationManager extends RelationManager
 {
@@ -79,8 +83,14 @@ class RisksRelationManager extends RelationManager
                     ->default('identified')
                     ->required()
                     ->label('Statut'),
+                Select::make('assigned_to')
+                    ->label('Responsable')
+                    ->options(User::pluck('name', 'id'))
+                    ->searchable()
+                    ->placeholder('Non assigné'),
                 FileUpload::make('file_path')
                     ->label('Fichier joint')
+                    ->disk('local')
                     ->directory('risks')
                     ->downloadable()
                     ->openable(),
@@ -145,6 +155,20 @@ class RisksRelationManager extends RelationManager
                         'danger' => 'high',
                     ])
                     ->label('Impact'),
+                TextColumn::make('risk_score')
+                    ->label('Score')
+                    ->state(fn ($record) => match(true) {
+                        $record->probability === 'high' && $record->impact === 'high' => '🔴 Critique',
+                        ($record->probability === 'high' && $record->impact === 'medium')
+                            || ($record->probability === 'medium' && $record->impact === 'high') => '🟠 Élevé',
+                        $record->probability === 'low' && $record->impact === 'low' => '🟢 Faible',
+                        default => '🟡 Moyen',
+                    })
+                    ->sortable(false),
+                TextColumn::make('assignedTo.name')
+                    ->label('Responsable')
+                    ->placeholder('—')
+                    ->icon('heroicon-o-user'),
                 TextColumn::make('status')
                     ->badge()
                     ->colors([
@@ -157,13 +181,24 @@ class RisksRelationManager extends RelationManager
                 TextColumn::make('file_path')
                     ->label('Fichier')
                     ->formatStateUsing(fn() => 'Télécharger')
-                    ->url(fn($record) => $record->file_path ? asset('storage/' . $record->file_path) : null)
+                    ->url(fn($record) => $record->file_path ? route('private.file.show', ['path' => $record->file_path]) : null)
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('primary')
                     ->visible(fn($record) => ! empty($record->file_path)),
             ])
             ->filters([
+                SelectFilter::make('status')
+                    ->label('Statut')
+                    ->options([
+                        'identified' => 'Identifié',
+                        'mitigated' => 'Atténué',
+                        'occurred' => 'Survenu',
+                        'closed' => 'Fermé',
+                    ]),
+                SelectFilter::make('impact')
+                    ->label('Impact')
+                    ->options(['low' => 'Faible', 'medium' => 'Moyen', 'high' => 'Élevé']),
                 TrashedFilter::make(),
             ])
             ->headerActions([
@@ -190,5 +225,25 @@ class RisksRelationManager extends RelationManager
                 ->withoutGlobalScopes([
                     SoftDeletingScope::class,
                 ]));
+    }
+
+    protected function canCreate(): bool
+    {
+        return Auth::user()->can('create', \App\Models\ProjectRisk::class);
+    }
+
+    protected function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update', $record);
+    }
+
+    protected function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete', $record);
+    }
+
+    protected function canDeleteAny(): bool
+    {
+        return Auth::user()->can('deleteAny', \App\Models\ProjectRisk::class);
     }
 }

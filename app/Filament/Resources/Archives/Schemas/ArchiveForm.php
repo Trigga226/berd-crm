@@ -3,14 +3,14 @@
 namespace App\Filament\Resources\Archives\Schemas;
 
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Slimani\MediaManager\Form\MediaPicker;
 
 class ArchiveForm
 {
@@ -28,12 +28,12 @@ class ArchiveForm
                             ->label('Type d\'archive')
                             ->options([
                                 'Avis de manifestation' => 'Avis de manifestation',
-                                'Manifestation' => 'Manifestation',
-                                'Offres' => 'Offres',
-                                'Livrable' => 'Livrable',
-                                'Rapport' => 'Rapport',
+                                'Manifestation'          => 'Manifestation',
+                                'Offres'                 => 'Offres',
+                                'Livrable'               => 'Livrable',
+                                'Rapport'                => 'Rapport',
                                 'Document administratif' => 'Document administratif',
-                                'Autre' => 'Autre',
+                                'Autre'                  => 'Autre',
                             ])
                             ->required()
                             ->searchable()
@@ -53,27 +53,35 @@ class ArchiveForm
                             ->maxLength(255),
                         TextInput::make('resultat')
                             ->label('Résultat (Optionnel)')
-                            ->visible(fn(\Filament\Schemas\Components\Utilities\Get $get) => in_array($get('type'), ['Manifestation', 'Offres']))
+                            ->visible(fn(Get $get) => in_array($get('type'), ['Manifestation', 'Offres']))
                             ->maxLength(255),
                         Textarea::make('observation')
                             ->label('Observation')
                             ->columnSpanFull(),
                     ])->columns(2),
 
-                Section::make('Fichiers')
+                Section::make('Documents')
+                    ->description('Sélectionnez des fichiers depuis la médiathèque ou déposez-en de nouveaux.')
                     ->schema([
-                        FileUpload::make('fichier')
-                            ->label('Documents')
+                        MediaPicker::make('mediaFiles')
+                            ->label('Documents archivés')
+                            ->relationship('mediaFiles')
                             ->multiple()
-                            ->directory(function (\Filament\Schemas\Components\Utilities\Get $get) {
-                                $type = $get('type') ?? 'Divers';
-                                $typeSlug = Str::slug($type);
-                                return "archives/{$typeSlug}";
-                            })
-                            ->preserveFilenames()
-                            ->downloadable()
-                            ->openable()
-                            ->required()
+                            ->directory(fn(Get $get) => 'Archives/' . ($get('type') ?? 'Divers'))
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'application/msword',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                'application/vnd.ms-excel',
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                'application/vnd.ms-powerpoint',
+                                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                                'application/zip',
+                                'application/x-rar-compressed',
+                            ])
                             ->columnSpanFull(),
                     ]),
             ]);

@@ -28,6 +28,7 @@ class Project extends Model
         'contract_path',
         'project_manager_user_id',
         'project_manager_expert_id',
+        'use_manual_percentage',
     ];
 
     protected $casts = [
@@ -38,6 +39,7 @@ class Project extends Model
         'execution_percentage' => 'decimal:2',
         'total_budget' => 'decimal:2',
         'consumed_budget' => 'decimal:2',
+        'use_manual_percentage' => 'boolean',
     ];
 
     // Relations
@@ -152,22 +154,24 @@ class Project extends Model
     public function updateCalculations(): void
     {
         // Execution Percentage
-        $totalDeliverables = $this->deliverables()->count();
-        $validatedDeliverables = $this->deliverables()->where('status', 'validated')->count();
-        $deliverablesProgress = $totalDeliverables > 0 ? ($validatedDeliverables / $totalDeliverables) * 100 : 0;
+        if (!$this->use_manual_percentage) {
+            $totalDeliverables = $this->deliverables()->count();
+            $validatedDeliverables = $this->deliverables()->where('status', 'validated')->count();
+            $deliverablesProgress = $totalDeliverables > 0 ? ($validatedDeliverables / $totalDeliverables) * 100 : 0;
 
-        $totalActivities = $this->activities()->count();
-        $completedActivities = $this->activities()->where('status', 'completed')->count();
-        $activitiesProgress = $totalActivities > 0 ? ($completedActivities / $totalActivities) * 100 : 0;
+            $totalActivities = $this->activities()->count();
+            $completedActivities = $this->activities()->where('status', 'completed')->count();
+            $activitiesProgress = $totalActivities > 0 ? ($completedActivities / $totalActivities) * 100 : 0;
 
-        if ($totalDeliverables === 0 && $totalActivities === 0) {
-            $this->execution_percentage = 0;
-        } elseif ($totalDeliverables === 0) {
-            $this->execution_percentage = $activitiesProgress;
-        } elseif ($totalActivities === 0) {
-            $this->execution_percentage = $deliverablesProgress;
-        } else {
-            $this->execution_percentage = ($deliverablesProgress + $activitiesProgress) / 2;
+            if ($totalDeliverables === 0 && $totalActivities === 0) {
+                $this->execution_percentage = 0;
+            } elseif ($totalDeliverables === 0) {
+                $this->execution_percentage = $activitiesProgress;
+            } elseif ($totalActivities === 0) {
+                $this->execution_percentage = $deliverablesProgress;
+            } else {
+                $this->execution_percentage = ($deliverablesProgress + $activitiesProgress) / 2;
+            }
         }
 
         // Consumed Budget

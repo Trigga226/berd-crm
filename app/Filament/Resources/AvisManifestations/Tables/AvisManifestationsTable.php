@@ -92,7 +92,7 @@ class AvisManifestationsTable
                     }),
 
 
-                \Filament\Tables\Filters\TrashedFilter::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+                \Filament\Tables\Filters\TrashedFilter::make()->visible(Auth::user()->isSuperAdmin()),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -101,8 +101,8 @@ class AvisManifestationsTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
-                    RestoreBulkAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+                    ForceDeleteBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
+                    RestoreBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
                 ]),
             ])
             ->defaultSort('deadline', 'asc');

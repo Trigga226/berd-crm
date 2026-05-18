@@ -49,7 +49,7 @@ class ExpertsTable
                     ->color('primary'),
             ])
             ->filters([
-                \Filament\Tables\Filters\TrashedFilter::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+                \Filament\Tables\Filters\TrashedFilter::make()->visible(Auth::user()->isSuperAdmin()),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -60,8 +60,8 @@ class ExpertsTable
                     ->url(fn($record) => asset('storage/' . $record->cv_path))
                     ->openUrlInNewTab(),
                 DeleteAction::make(),
-                ForceDeleteAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
-                RestoreAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+                ForceDeleteAction::make()->visible(Auth::user()->isSuperAdmin()),
+                RestoreAction::make()->visible(Auth::user()->isSuperAdmin()),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -74,8 +74,8 @@ class ExpertsTable
                         })
                         ->deselectRecordsAfterCompletion(),
                     DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
-                    RestoreBulkAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+                    ForceDeleteBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
+                    RestoreBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
                 ]),
             ]);
     }

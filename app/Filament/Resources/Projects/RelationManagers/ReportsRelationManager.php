@@ -27,6 +27,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 
@@ -66,6 +67,7 @@ class ReportsRelationManager extends RelationManager
                     ->columnSpanFull(),
                 FileUpload::make('file_path')
                     ->label('Rapport (PDF)')
+                    ->disk('local')
                     ->directory('reports')
                     ->downloadable()
                     ->openable(),
@@ -103,7 +105,7 @@ class ReportsRelationManager extends RelationManager
                 TextColumn::make('file_path')
                     ->label('Fichier')
                     ->formatStateUsing(fn() => 'Télécharger')
-                    ->url(fn($record) => $record->file_path ? asset('storage/' . $record->file_path) : null)
+                    ->url(fn($record) => $record->file_path ? route('private.file.show', ['path' => $record->file_path]) : null)
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('primary')
@@ -136,5 +138,25 @@ class ReportsRelationManager extends RelationManager
                 ->withoutGlobalScopes([
                     SoftDeletingScope::class,
                 ]));
+    }
+
+    protected function canCreate(): bool
+    {
+        return Auth::user()->can('create', \App\Models\ProjectReport::class);
+    }
+
+    protected function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update', $record);
+    }
+
+    protected function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete', $record);
+    }
+
+    protected function canDeleteAny(): bool
+    {
+        return Auth::user()->can('deleteAny', \App\Models\ProjectReport::class);
     }
 }

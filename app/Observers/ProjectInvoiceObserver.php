@@ -3,128 +3,62 @@
 namespace App\Observers;
 
 use App\Models\ProjectInvoice;
-use App\Models\SecureView;
-use Illuminate\Support\Facades\Auth;
+use App\Observers\Concerns\LogsToSecureView;
 
 class ProjectInvoiceObserver
 {
-    /**
-     * Handle the ProjectInvoice "created" event.
-     */
+    use LogsToSecureView;
+
     public function created(ProjectInvoice $projectInvoice): void
     {
-        $projectInvoice->project->updateCalculations();
+        $projectInvoice->project?->updateCalculations();
 
-        $user = Auth::user();
-
-        if (!$user) {
-            return;
-        }
-
-        $secureView = new SecureView();
-
-        $secureView->titre = "Création d'une facture de projet ";
-        $secureView->description = "{$user->name}, identifier par le mail {$user->email} a cree une facture de projet pour : {$projectInvoice->project->title} du numero {$projectInvoice->invoice_number}";
-        $secureView->auteur = $user->id;
-        $secureView->date = date('Y-m-d H:i:s');
-        $secureView->type = "Création";
-
-        $secureView->save();
+        $this->logAction(
+            "Création d'une facture de projet",
+            "Création de la facture N° {$projectInvoice->invoice_number} pour le projet : {$projectInvoice->project?->title}",
+            'Création'
+        );
     }
 
-    /**
-     * Handle the ProjectInvoice "updated" event.
-     */
     public function updated(ProjectInvoice $projectInvoice): void
     {
-        $projectInvoice->project->updateCalculations();
+        $projectInvoice->project?->updateCalculations();
 
-        $user = Auth::user();
-
-        if (!$user) {
-            return;
-        }
-
-        $secureView = new SecureView();
-
-        $secureView->titre = "Modification d'une facture de projet ";
-        $secureView->description = "{$user->name}, identifier par le mail {$user->email} a modifié une facture de projet pour : {$projectInvoice->project->title} du numero {$projectInvoice->invoice_number}";
-        $secureView->auteur = $user->id;
-        $secureView->date = date('Y-m-d H:i:s');
-        $secureView->type = "Modification";
-
-        $secureView->save();
+        $this->logAction(
+            "Modification d'une facture de projet",
+            "Modification de la facture N° {$projectInvoice->invoice_number} pour le projet : {$projectInvoice->project?->title}",
+            'Modification'
+        );
     }
 
-    /**
-     * Handle the ProjectInvoice "deleted" event.
-     */
     public function deleted(ProjectInvoice $projectInvoice): void
     {
-        $projectInvoice->project->updateCalculations();
+        $projectInvoice->project?->updateCalculations();
 
-        $user = Auth::user();
-
-        if (!$user) {
-            return;
-        }
-
-        $secureView = new SecureView();
-
-        $secureView->titre = "Suppression d'une facture de projet ";
-        $secureView->description = "{$user->name}, identifier par le mail {$user->email} a supprimé une facture de projet pour : {$projectInvoice->project->title} du numero {$projectInvoice->invoice_number}";
-        $secureView->auteur = $user->id;
-        $secureView->date = date('Y-m-d H:i:s');
-        $secureView->type = "Suppression";
-
-        $secureView->save();
+        $this->logAction(
+            "Suppression d'une facture de projet",
+            "Suppression de la facture N° {$projectInvoice->invoice_number} pour le projet : {$projectInvoice->project?->title}",
+            'Suppression'
+        );
     }
 
-    /**
-     * Handle the ProjectInvoice "restored" event.
-     */
     public function restored(ProjectInvoice $projectInvoice): void
     {
-        $projectInvoice->project->updateCalculations();
+        $projectInvoice->project?->updateCalculations();
 
-        $user = Auth::user();
-
-        if (!$user) {
-            return;
-        }
-
-        $secureView = new SecureView();
-
-        $secureView->titre = "Restauration d'une facture de projet ";
-        $secureView->description = "{$user->name}, identifier par le mail {$user->email} a restauré une facture de projet pour : {$projectInvoice->project->title} du numero {$projectInvoice->invoice_number}";
-        $secureView->auteur = $user->id;
-        $secureView->date = date('Y-m-d H:i:s');
-        $secureView->type = "Restauration";
-
-        $secureView->save();
+        $this->logAction(
+            "Restauration d'une facture de projet",
+            "Restauration de la facture N° {$projectInvoice->invoice_number} pour le projet : {$projectInvoice->project?->title}",
+            'Restauration'
+        );
     }
 
-    /**
-     * Handle the ProjectInvoice "force deleted" event.
-     */
     public function forceDeleted(ProjectInvoice $projectInvoice): void
     {
-        $projectInvoice->project->updateCalculations();
-
-        $user = Auth::user();
-
-        if (!$user) {
-            return;
-        }
-
-        $secureView = new SecureView();
-
-        $secureView->titre = "Suppression définitive d'une facture de projet ";
-        $secureView->description = "{$user->name}, identifier par le mail {$user->email} a supprimé définitivement une facture de projet pour : {$projectInvoice->project->title} du numero {$projectInvoice->invoice_number}";
-        $secureView->auteur = $user->id;
-        $secureView->date = date('Y-m-d H:i:s');
-        $secureView->type = "Suppression définitive";
-
-        $secureView->save();
+        $this->logAction(
+            "Suppression définitive d'une facture de projet",
+            "Suppression définitive de la facture N° {$projectInvoice->invoice_number} pour le projet : {$projectInvoice->project?->title}",
+            'Suppression définitive'
+        );
     }
 }

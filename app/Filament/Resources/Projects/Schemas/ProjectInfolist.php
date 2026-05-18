@@ -119,9 +119,7 @@ class ProjectInfolist
                     ->collapsible(),
 
                 // Budget
-                ComponentsSection::make('Budget')->visible(function():bool{
-                        return  Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Gerant') || Auth::user()->hasRole('Comptable');
-                })
+                ComponentsSection::make('Budget')->visible(fn (): bool => Auth::user()->canViewFinancials())
                     ->schema([
                         TextEntry::make('total_budget')
                             ->label('Budget Total')
@@ -131,7 +129,7 @@ class ProjectInfolist
                         TextEntry::make('consumed_budget')
                             ->label('Budget Consommé')
                             ->money('XOF')
-                            ->icon('heroicon-o-currency-euro')
+                            ->icon('heroicon-o-banknotes')
                             ->color(fn($record) => $record->consumed_budget > $record->total_budget ? 'danger' : 'success'),
                         TextEntry::make('budget_variance')
                             ->label('Variance Budgétaire')
@@ -161,7 +159,7 @@ class ProjectInfolist
                             ->label('Contrat')
                             ->placeholder('Aucun contrat')
                             ->icon('heroicon-o-document')
-                            ->url(fn($state) => $state ? asset('storage/' . $state) : null)
+                            ->url(fn($state) => $state ? route('private.file.show', ['path' => $state]) : null)
                             ->openUrlInNewTab()
                             ->formatStateUsing(fn($state) => $state ? 'Voir le contrat' : 'Aucun contrat'),
                     ])

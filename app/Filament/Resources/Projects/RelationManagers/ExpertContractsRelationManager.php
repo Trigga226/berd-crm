@@ -63,8 +63,13 @@ class ExpertContractsRelationManager extends RelationManager
                 TextInput::make('planned_days')
                     ->label('Jours prévus')
                     ->numeric(),
+                TextInput::make('actual_days')
+                    ->label('Jours réels')
+                    ->numeric()
+                    ->helperText('Renseigner en fin de mission'),
                 FileUpload::make('contract_path')
                     ->label('Contrat (PDF)')
+                    ->disk('local')
                     ->acceptedFileTypes(['application/pdf'])
                     ->directory('contracts')
                     ->downloadable()
@@ -116,6 +121,16 @@ class ExpertContractsRelationManager extends RelationManager
                     ->label('Fin')
                     ->date()
                     ->sortable(),
+                TextColumn::make('planned_days')
+                    ->label('J. Prévus')
+                    ->suffix('j')
+                    ->sortable(),
+                TextColumn::make('actual_days')
+                    ->label('J. Réels')
+                    ->suffix('j')
+                    ->placeholder('—')
+                    ->color(fn ($record) => ($record->actual_days ?? 0) > ($record->planned_days ?? 0) ? 'danger' : 'success')
+                    ->sortable(),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
@@ -127,7 +142,7 @@ class ExpertContractsRelationManager extends RelationManager
                 TextColumn::make('contract_path')
                     ->label('Contrat')
                     ->formatStateUsing(fn() => 'Télécharger')
-                    ->url(fn($record) => $record->contract_path ? asset('storage/' . $record->contract_path) : null)
+                    ->url(fn($record) => $record->contract_path ? route('private.file.show', ['path' => $record->contract_path]) : null)
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('primary')
@@ -166,25 +181,21 @@ class ExpertContractsRelationManager extends RelationManager
 
     protected function canCreate(): bool
     {
-        $user = Auth::user();
-         return $user->hasRole('Charge') || $user->hasRole('super_admin') || $user->hasRole('Gerant') || $user->hasRole('secretaire de direction') || $user->hasRole('Assistant charge') || $user->hasRole('Comptable');
+        return Auth::user()->can('create', \App\Models\ProjectExpertContract::class);
     }
 
     protected function canEdit(Model $record): bool
     {
-        $user = Auth::user();
-        return $user->hasRole('Charge') || $user->hasRole('super_admin') || $user->hasRole('Gerant') || $user->hasRole('secretaire de direction') || $user->hasRole('Assistant charge') || $user->hasRole('Comptable');
+        return Auth::user()->can('update', $record);
     }
 
     protected function canDelete(Model $record): bool
     {
-        $user = Auth::user();
-        return  $user->hasRole('super_admin') || $user->hasRole('Gerant');
+        return Auth::user()->can('delete', $record);
     }
 
     protected function canDeleteAny(): bool
     {
-        $user = Auth::user();
-        return  $user->hasRole('super_admin') || $user->hasRole('Gerant');
+        return Auth::user()->can('deleteAny', \App\Models\ProjectExpertContract::class);
     }
 }

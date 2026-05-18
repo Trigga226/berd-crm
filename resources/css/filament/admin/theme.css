@@ -1,0 +1,26 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import '../../../../vendor/slimani/filament-media-manager/resources/css/media-manager.css';
+@import '../../../../vendor/resma/filament-awin-theme/resources/css/panel/index.css';
+@import '../../../../vendor/resma/filament-awin-theme/resources/css/widget/index.css';
+@import '../../../../vendor/resma/filament-awin-theme/resources/css/table/index.css';
+@import '../../../../vendor/resma/filament-awin-theme/resources/css/form/index.css';
+
+@theme inline {
+    --color-primary-50: var(--color-primary-50);
+    --color-primary-100: var(--color-primary-100);
+    --color-primary-200: var(--color-primary-200);
+    --color-primary-300: var(--color-primary-300);
+    --color-primary-400: var(--color-primary-400);
+    --color-primary-500: var(--color-primary-500);
+    --color-primary-600: var(--color-primary-600);
+    --color-primary-700: var(--color-primary-700);
+    --color-primary-800: var(--color-primary-800);
+    --color-primary-900: var(--color-primary-900);
+    --color-primary-950: var(--color-primary-950);
+}
+
+@source '../../../../vendor/slimani/filament-media-manager/resources/**/*';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+

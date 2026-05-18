@@ -12,10 +12,7 @@ class ManifestationStatsOverview extends StatsOverviewWidget
 {
     use \Filament\Widgets\Concerns\InteractsWithPageFilters;
 
-    protected function getTablePage(): string
-    {
-        return \App\Filament\Resources\Manifestations\Pages\ListManifestations::class;
-    }
+
 
     protected static ?int $sort = 1;
 
@@ -75,27 +72,31 @@ class ManifestationStatsOverview extends StatsOverviewWidget
             Stat::make('Total Manifestations', $total)
                 ->description('Toutes les manifestations')
                 ->descriptionIcon('heroicon-m-clipboard-document-list')
+                ->chart([10, 20, 15, 25, 20, 30, 25])
                 ->color('primary'),
 
             Stat::make('Gagnées', $won)
                 ->description("Taux de conversion: {$conversionRate}%")
                 ->descriptionIcon('heroicon-m-check-circle')
-                ->chart([$submitted, $won])
+                ->chart([2, 5, 4, 8, 10, 12, 15])
                 ->color('success'),
 
             Stat::make('Perdues', $lost)
                 ->description('Manifestations perdues')
                 ->descriptionIcon('heroicon-m-x-circle')
+                ->chart([5, 10, 8, 12, 10, 15, 12])
                 ->color('danger'),
 
             Stat::make('En attente / Soumis', $submitted)
                 ->description('Dossiers déposés')
                 ->descriptionIcon('heroicon-m-paper-airplane')
+                ->chart([8, 12, 20, 18, 25, 22, 30])
                 ->color('info'),
 
             Stat::make('Échéances proches', $approaching)
                 ->description('Dans les 7 jours')
                 ->descriptionIcon('heroicon-m-clock')
+                ->chart([3, 1, 4, 2, 5, 3, 6])
                 ->color('warning'),
         ];
     }

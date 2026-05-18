@@ -8,6 +8,8 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
@@ -18,47 +20,56 @@ class ArchivesTable
     {
         return $table
             ->columns([
-                \Filament\Tables\Columns\TextColumn::make('titre')
+                TextColumn::make('titre')
                     ->label('Titre')
                     ->searchable()
-                    ->sortable(),
-                \Filament\Tables\Columns\TextColumn::make('type')
+                    ->sortable()
+                    ->weight('medium'),
+                TextColumn::make('type')
                     ->label('Type')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
                         'Avis de manifestation' => 'warning',
-                        'Manifestation' => 'info',
-                        'Offres' => 'success',
-                        'Livrable' => 'primary',
-                        'Rapport' => 'gray',
+                        'Manifestation'          => 'info',
+                        'Offres'                 => 'success',
+                        'Livrable'               => 'primary',
+                        'Rapport'                => 'gray',
                         'Document administratif' => 'danger',
-                        default => 'secondary',
+                        default                  => 'secondary',
                     })
                     ->searchable()
                     ->sortable(),
-                \Filament\Tables\Columns\TextColumn::make('date_archive')
+                TextColumn::make('date_archive')
                     ->label('Date d\'archivage')
-                    ->date()
+                    ->date('d/m/Y')
                     ->sortable(),
-                \Filament\Tables\Columns\TextColumn::make('archive_par')
+                TextColumn::make('archive_par')
                     ->label('Archivé par')
-                    ->searchable(),
-                \Filament\Tables\Columns\TextColumn::make('resultat')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('resultat')
                     ->label('Résultat')
-                    ->placeholder('N/A')
-                    ->searchable(),
+                    ->placeholder('—')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('media_files_count')
+                    ->label('Documents')
+                    ->badge()
+                    ->color('primary')
+                    ->sortable(),
             ])
             ->filters([
-                TrashedFilter::make()->visible(Auth::user()->email==="franck.b@berd-ing.com"),
-                \Filament\Tables\Filters\SelectFilter::make('type')
+                TrashedFilter::make()->visible(Auth::user()->isSuperAdmin()),
+                SelectFilter::make('type')
+                    ->label('Type')
                     ->options([
                         'Avis de manifestation' => 'Avis de manifestation',
-                        'Manifestation' => 'Manifestation',
-                        'Offres' => 'Offres',
-                        'Livrable' => 'Livrable',
-                        'Rapport' => 'Rapport',
+                        'Manifestation'          => 'Manifestation',
+                        'Offres'                 => 'Offres',
+                        'Livrable'               => 'Livrable',
+                        'Rapport'                => 'Rapport',
                         'Document administratif' => 'Document administratif',
-                        'Autre' => 'Autre',
+                        'Autre'                  => 'Autre',
                     ]),
             ])
             ->recordActions([
@@ -68,9 +79,10 @@ class ArchivesTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make()->visible(Auth::user()->email==="franck.b@berd-ing.com"),
-                    RestoreBulkAction::make()->visible(Auth::user()->email==="franck.b@berd-ing.com"),
+                    ForceDeleteBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
+                    RestoreBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
                 ]),
-            ]);
+            ])
+            ->defaultSort('date_archive', 'desc');
     }
 }

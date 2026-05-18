@@ -17,6 +17,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Slimani\MediaManager\Models\File;
 
 class ArchiveResource extends Resource
 {
@@ -54,6 +55,11 @@ class ArchiveResource extends Resource
             'view' => ViewArchive::route('/{record}'),
             'edit' => EditArchive::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withCount('mediaFiles');
     }
 
     public static function getRecordRouteBindingEloquentQuery(): Builder

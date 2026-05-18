@@ -71,7 +71,7 @@ class ProjectsTable
                     ->sortable(),
                 TextColumn::make('total_budget')
                     ->label('Budget')
-                    ->money('EUR')
+                    ->money('XOF')
                     ->sortable(),
                 TextColumn::make('projectManagerUser.name')
                     ->label('Chef de Projet')
@@ -120,7 +120,7 @@ class ProjectsTable
                             );
                     }),
 
-                    TrashedFilter::make()->visible(Auth::user()->email==="franck.b@berd-ing.com"),
+                    TrashedFilter::make()->visible(Auth::user()->isSuperAdmin()),
             ])
             ->actions([
                 ViewAction::make(),

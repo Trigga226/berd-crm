@@ -19,11 +19,20 @@ class ProjectRisk extends Model
         'mitigation_plan',
         'status',
         'file_path',
+        'assigned_to',
     ];
 
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Utilisateur responsable de la gestion de ce risque.
+     */
+    public function assignedTo()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     // Accessor for risk score

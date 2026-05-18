@@ -12,9 +12,14 @@ use Illuminate\Support\Facades\Mail;
 
 class AlertEmailService
 {
-    // protected string $recipientEmail = 'personnel@berd-ing.com';
-    protected string $recipientEmail = 'franck.b@berd-ing.com';
-    protected string $ccEmail = 'lionel.palenfo@gmail.com';
+    protected string $recipientEmail;
+    protected string $ccEmail;
+
+    public function __construct()
+    {
+        $this->recipientEmail = config('mail.alert_recipient', env('ALERT_RECIPIENT_EMAIL', 'personnel@berd-ing.com'));
+        $this->ccEmail = config('mail.alert_cc', env('ALERT_CC_EMAIL', ''));
+    }
 
     /**
      * Send email for manifestation alerts

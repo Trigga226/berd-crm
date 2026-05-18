@@ -2,10 +2,10 @@
 
 namespace App\Filament\Resources\Archives\Schemas;
 
-use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Slimani\MediaManager\Infolists\Components\MediaFileEntry;
 
 class ArchiveInfolist
 {
@@ -22,12 +22,12 @@ class ArchiveInfolist
                             ->badge()
                             ->color(fn(string $state): string => match ($state) {
                                 'Avis de manifestation' => 'warning',
-                                'Manifestation' => 'info',
-                                'Offres' => 'success',
-                                'Livrable' => 'primary',
-                                'Rapport' => 'gray',
+                                'Manifestation'          => 'info',
+                                'Offres'                 => 'success',
+                                'Livrable'               => 'primary',
+                                'Rapport'                => 'gray',
                                 'Document administratif' => 'danger',
-                                default => 'secondary',
+                                default                  => 'secondary',
                             }),
                         TextEntry::make('date_archive')
                             ->label('Date d\'archivage')
@@ -45,14 +45,24 @@ class ArchiveInfolist
 
                 Section::make('Documents Archive')
                     ->schema([
-                        TextEntry::make('fichier')
+                        MediaFileEntry::make('documents')
                             ->label('Fichiers joints')
+                            ->state(fn($record) => $record->mediaFiles)
+                            ->placeholder('Aucun document attaché.')
+                            ->width('130px')
+                            ->height('130px')
+                            ->columnSpanFull(),
+
+                        // Compatibilité ascendante : anciens fichiers stockés en colonne JSON
+                        TextEntry::make('fichier')
+                            ->label('Anciens fichiers (héritage)')
+                            ->visible(fn($record) => !empty($record->fichier))
                             ->listWithLineBreaks()
                             ->bulleted()
                             ->formatStateUsing(fn($state) => basename($state))
                             ->icon('heroicon-o-document')
-                            ->iconColor('primary')
-                            ->color('primary')
+                            ->iconColor('gray')
+                            ->color('gray')
                             ->url(fn($state) => asset('storage/' . $state), true)
                             ->columnSpanFull(),
                     ]),

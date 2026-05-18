@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\ProjectService;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -11,7 +13,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Injection de dépendances — permet le mocking dans les tests
+        $this->app->bind(ProjectService::class);
     }
 
     /**
@@ -19,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Override the plugin's MediaBrowser to fix missing clearCachedSchemas() in setCurrentFolder()
+        Livewire::component('media-browser', \App\Livewire\MediaBrowser::class);
+
         $models = [
             'AdministrativeDocument',
             'AvisManifestation',

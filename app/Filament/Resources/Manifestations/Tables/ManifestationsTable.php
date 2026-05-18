@@ -132,7 +132,7 @@ class ManifestationsTable
                         }
                         return 'Note Min: ' . $data['value'];
                     }),
-                TrashedFilter::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+                TrashedFilter::make()->visible(Auth::user()->isSuperAdmin()),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -141,8 +141,8 @@ class ManifestationsTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
-                    RestoreBulkAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+                    ForceDeleteBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
+                    RestoreBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
                 ]),
             ]);
     }

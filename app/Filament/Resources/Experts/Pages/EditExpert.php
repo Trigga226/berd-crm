@@ -19,8 +19,8 @@ class EditExpert extends EditRecord
         return [
             ViewAction::make(),
             DeleteAction::make(),
-            ForceDeleteAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
-            RestoreAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+            ForceDeleteAction::make()->visible(Auth::user()->isSuperAdmin()),
+            RestoreAction::make()->visible(Auth::user()->isSuperAdmin()),
         ];
     }
 

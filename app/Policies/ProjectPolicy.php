@@ -67,4 +67,12 @@ class ProjectPolicy
         return $authUser->can('Reorder:Project');
     }
 
+    /**
+     * Détermine si l'utilisateur peut voir les données financières du projet.
+     */
+    public function viewFinancials(AuthUser $authUser, Project $project): bool
+    {
+        return $authUser->canViewFinancials();
+    }
+
 }

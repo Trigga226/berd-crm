@@ -97,26 +97,26 @@ class OffersChart extends ChartWidget
                 [
                     'label' => 'Gagnées',
                     'data' => $dataWon->map(fn(TrendValue $value) => $value->aggregate),
-                    'backgroundColor' => '#22c55e', // success-500
+                    'backgroundColor' => 'rgba(34, 197, 94, 0.1)',
                     'borderColor' => '#22c55e',
+                    'fill' => true,
+                    'tension' => 0.4,
                 ],
                 [
                     'label' => 'Perdus',
                     'data' => $dataLost->map(fn(TrendValue $value) => $value->aggregate),
-                    'backgroundColor' => '#ef4444', // danger-500
+                    'backgroundColor' => 'rgba(239, 68, 68, 0.1)',
                     'borderColor' => '#ef4444',
-                ],
-                [
-                    'label' => 'Abandonnées',
-                    'data' => $dataAbandoned->map(fn(TrendValue $value) => $value->aggregate),
-                    'backgroundColor' => '#f59e0b', // warning-500
-                    'borderColor' => '#f59e0b',
+                    'fill' => true,
+                    'tension' => 0.4,
                 ],
                 [
                     'label' => 'En Cours',
                     'data' => $dataActive->map(fn(TrendValue $value) => $value->aggregate),
-                    'backgroundColor' => '#3b82f6', // primary-500
+                    'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
                     'borderColor' => '#3b82f6',
+                    'fill' => true,
+                    'tension' => 0.4,
                 ],
             ],
             'labels' => $dataWon->map(fn(TrendValue $value) => Carbon::parse($value->date)->translatedFormat('M Y')),
@@ -125,6 +125,32 @@ class OffersChart extends ChartWidget
 
     protected function getType(): string
     {
-        return 'bar';
+        return 'line';
+    }
+
+    protected function getOptions(): array
+    {
+        return [
+            'scales' => [
+                'y' => [
+                    'beginAtZero' => true,
+                    'grid' => [
+                        'display' => false,
+                    ],
+                ],
+                'x' => [
+                    'grid' => [
+                        'display' => false,
+                    ],
+                ],
+            ],
+            'plugins' => [
+                'legend' => [
+                    'display' => true,
+                    'position' => 'top',
+                    'align' => 'end',
+                ],
+            ],
+        ];
     }
 }

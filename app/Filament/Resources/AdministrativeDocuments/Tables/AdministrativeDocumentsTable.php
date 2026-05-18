@@ -67,7 +67,7 @@ class AdministrativeDocumentsTable
                 SelectFilter::make('category')
                     ->label('Catégorie')
                     ->options(\App\Models\AdministrativeDocument::getCategories()),
-                TrashedFilter::make()->native(false)->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+                TrashedFilter::make()->native(false)->visible(Auth::user()->isSuperAdmin()),
             ])
             ->recordActions([
                 ActionsViewAction::make(),
@@ -78,14 +78,14 @@ class AdministrativeDocumentsTable
                     ->url(fn($record) => asset('storage/' . $record->file_path))
                     ->openUrlInNewTab(),
                 ActionsDeleteAction::make(),
-                ActionsForceDeleteAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
-                ActionsRestoreAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+                ActionsForceDeleteAction::make()->visible(Auth::user()->isSuperAdmin()),
+                ActionsRestoreAction::make()->visible(Auth::user()->isSuperAdmin()),
             ])
             ->toolbarActions([
                 ActionsBulkActionGroup::make([
                     ActionsDeleteBulkAction::make(),
-                    ActionsForceDeleteBulkAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
-                    ActionsRestoreBulkAction::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+                    ActionsForceDeleteBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
+                    ActionsRestoreBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
                 ]),
             ]);
     }

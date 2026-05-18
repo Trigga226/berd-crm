@@ -8,8 +8,11 @@ use App\Models\Offer;
 use App\Models\Project;
 use Flowframe\Trend\Trend;
 use Flowframe\Trend\TrendValue;
+use App\Models\ProjectRisk;
+use App\Models\ProjectDeliverable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class PrintDashboardStatsController extends Controller
 {
@@ -25,7 +28,6 @@ class PrintDashboardStatsController extends Controller
         $projectTrend = [];
 
         if ($section === 'all' || $section === 'projects') {
-            $projectService = new ProjectService();
             // Using local logic to ensure new filters (client_id, dates) are applied
             $query = Project::query();
             $this->applyGlobalFilters($query, $filters, 'project');
@@ -69,6 +71,38 @@ class PrintDashboardStatsController extends Controller
             $offerTrend = $this->getOfferTrendData($filters);
         }
 
+        // 4. GLOBAL RISKS (New)
+        $riskMatrix = [
+            'high' => ['low' => 0, 'medium' => 0, 'high' => 0],
+            'medium' => ['low' => 0, 'medium' => 0, 'high' => 0],
+            'low' => ['low' => 0, 'medium' => 0, 'high' => 0],
+        ];
+        $risksQuery = ProjectRisk::query()->whereIn('status', ['identified', 'mitigated', 'occurred']);
+        $this->applyGlobalFilters($risksQuery, $filters, 'risk');
+        
+        $risks = $risksQuery->get();
+        foreach($risks as $risk) {
+            if(isset($riskMatrix[$risk->impact][$risk->probability])) {
+                $riskMatrix[$risk->impact][$risk->probability]++;
+            }
+        }
+
+        // 5. UPCOMING DELIVERABLES (New)
+        $deliverablesQuery = ProjectDeliverable::query()
+            ->where('status', '!=', 'validated')
+            ->orderBy('planned_date');
+        $this->applyGlobalFilters($deliverablesQuery, $filters, 'deliverable');
+        $upcomingDeliverables = $deliverablesQuery->with('project')->limit(15)->get();
+
+        // 6. FINANCIALS (New)
+        $financialStats = [
+            'total_invoiced' => DB::table('project_invoices')->sum('amount'),
+            'total_paid' => DB::table('project_invoices')->sum('paid_amount'),
+        ];
+        $financialStats['recovery_rate'] = $financialStats['total_invoiced'] > 0 
+            ? ($financialStats['total_paid'] / $financialStats['total_invoiced']) * 100 
+            : 100;
+
         return view('projects.print-dashboard-stats', [
             'date' => now(),
             'filters' => $filters,
@@ -82,6 +116,9 @@ class PrintDashboardStatsController extends Controller
             'offerStats' => $offerStats,
             'offerChart' => $offerChart,
             'offerTrend' => $offerTrend,
+            'riskMatrix' => $riskMatrix,
+            'upcomingDeliverables' => $upcomingDeliverables,
+            'financialStats' => $financialStats,
         ]);
     }
 
@@ -331,6 +368,16 @@ class PrintDashboardStatsController extends Controller
                     $q->where('score', '>=', $filters['score_min']);
                 });
             }
+        } elseif ($type === 'risk' || $type === 'deliverable') {
+            $query->whereHas('project', function($q) use ($filters) {
+                if (!empty($filters['country'])) $q->where('country', $filters['country']);
+                if (!empty($filters['client_id'])) $q->where('client_id', $filters['client_id']);
+                if (!empty($filters['domains'])) {
+                    $q->whereHas('offer.manifestation', function ($sub) use ($filters) {
+                        $sub->whereJsonContains('domains', $filters['domains']);
+                    });
+                }
+            });
         }
     }
 

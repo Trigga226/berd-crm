@@ -39,6 +39,7 @@ class ProjectAmendment extends Model
 
     public function scopeActive($query)
     {
-        return $query->where('status', 'signed');
+        return $query->where('status', 'signed')
+            ->where('signature_date', '<=', now());
     }
 }

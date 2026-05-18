@@ -18,6 +18,7 @@ class ProjectExpertContract extends Model
         'end_date',
         'daily_rate',
         'planned_days',
+        'actual_days',
         'contract_path',
         'status',
     ];
@@ -46,6 +47,27 @@ class ProjectExpertContract extends Model
         }
 
         return $this->daily_rate * $this->planned_days;
+    }
+
+    /**
+     * Coût réel basé sur les jours effectivement travaillés.
+     */
+    public function realCost(): float
+    {
+        if (!$this->daily_rate || !$this->actual_days) {
+            return 0;
+        }
+
+        return $this->daily_rate * $this->actual_days;
+    }
+
+    /**
+     * Écart de jours (dérive planification).
+     * Positif = dépassement, négatif = économie.
+     */
+    public function dayVariance(): int
+    {
+        return ($this->actual_days ?? 0) - ($this->planned_days ?? 0);
     }
 
     public function isActive(): bool

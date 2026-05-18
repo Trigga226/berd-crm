@@ -8,6 +8,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 use App\Utils\Pays;
 use Filament\Schemas\Components\Tabs as ComponentsTabs;
@@ -61,14 +62,18 @@ class ProjectForm
                                     ])
                                     ->required()
                                     ->default('preparation'),
+                                Toggle::make('use_manual_percentage')
+                                    ->label('Saisie manuelle de l\'avancement')
+                                    ->helperText('Désactive le calcul basé sur les livrables')
+                                    ->live(),
                                 TextInput::make('execution_percentage')
-                                    ->label('% d\'Exécution')
-                                    ->numeric()
-                                    ->suffix('%')
-                                    ->minValue(0)
-                                    ->maxValue(100)
-                                    ->default(0)
-                                    ->disabled(),
+                                     ->label('% d\'Exécution')
+                                     ->numeric()
+                                     ->suffix('%')
+                                     ->minValue(0)
+                                     ->maxValue(100)
+                                     ->default(0)
+                                     ->disabled(fn($get) => !$get('use_manual_percentage')),
                                 Textarea::make('description')
                                     ->label('Description')
                                     ->rows(3)
@@ -91,9 +96,7 @@ class ProjectForm
                             ])
                             ->columns(2),
 
-                        ComponentsTabs\Tab::make('Budget')->visible(function():bool{
-                        return  Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Gerant') || Auth::user()->hasRole('Comptable');
-                })
+                        ComponentsTabs\Tab::make('Budget')->visible(fn (): bool => Auth::user()->canViewFinancials())
                             ->schema([
                                 TextInput::make('total_budget')
                                     ->label('Budget Total')
@@ -125,6 +128,7 @@ class ProjectForm
                                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->first_name} {$record->last_name}"),
                                 FileUpload::make('contract_path')
                                     ->label('Contrat du Projet')
+                                    ->disk('local')
                                     ->directory('projets/contrats')
                                     ->acceptedFileTypes(['application/pdf'])
                                     ->columnSpanFull(),

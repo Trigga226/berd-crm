@@ -6,6 +6,8 @@ use App\Models\Project;
 use App\Models\ProjectDeliverable;
 use App\Models\ProjectInvoice;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class ProjectService
 {
@@ -33,26 +35,6 @@ class ProjectService
     }
 
     /**
-     * Calcule et met à jour le budget consommé d'un projet
-     */
-    public function updateConsumedBudget(Project $project): float
-    {
-        // Budget consommé = somme des coûts des contrats experts + autres dépenses
-        $expertContractsCost = $project->expertContracts()
-            ->get()
-            ->sum(function ($contract) {
-                return $contract->daily_rate * $contract->planned_days;
-            });
-
-        // Ajouter d'autres coûts si nécessaire
-        $consumedBudget = $expertContractsCost;
-
-        $project->update(['consumed_budget' => $consumedBudget]);
-
-        return $consumedBudget;
-    }
-
-    /**
      * Récupère les projets en retard
      */
     public function getDelayedProjects(): Collection
@@ -72,18 +54,21 @@ class ProjectService
     {
         return Project::query()
             ->whereColumn('consumed_budget', '>', 'total_budget')
+            ->where('total_budget', '>', 0)
             ->with(['client', 'projectManagerUser'])
             ->get();
     }
 
     /**
-     * Récupère les livrables en retard
+     * Récupère les livrables en retard (avec null check sur le projet)
      */
     public function getDelayedDeliverables(): Collection
     {
         return ProjectDeliverable::query()
+            ->whereNotNull('project_id')
             ->where('status', '!=', 'validated')
             ->where('planned_date', '<', now())
+            ->whereHas('project', fn ($q) => $q->whereNull('deleted_at'))
             ->with(['project.client'])
             ->get();
     }
@@ -100,9 +85,6 @@ class ProjectService
             ->get();
     }
 
-    /**
-     * Récupère les factures en retard de paiement
-     */
     /**
      * Récupère les projets qui arrivent à échéance bientôt (dans X jours)
      */
@@ -144,76 +126,80 @@ class ProjectService
 
     /**
      * Calcule les statistiques globales des projets
+     * Résultat mis en cache 2 minutes par jeu de filtres.
      */
     public function getGlobalStats(array $filters = []): array
     {
-        $query = Project::query();
+        $cacheKey = 'project_stats_' . md5(serialize($filters));
 
-        // Appliquer les filtres
-        if (!empty($filters['country'])) {
-            $query->where('country', $filters['country']);
-        }
+        return Cache::remember($cacheKey, 120, function () use ($filters) {
+            $query = Project::query();
 
-        if (!empty($filters['period']) && $filters['period'] !== 'all') {
-            $months = match ($filters['period']) {
-                '1_month' => 1,
-                '3_months' => 3,
-                '6_months' => 6,
-                '1_year' => 12,
-                '2_years' => 24,
-                default => null,
-            };
-
-            if ($months) {
-                $query->where('created_at', '>=', now()->subMonths($months));
+            // Appliquer les filtres
+            if (!empty($filters['country'])) {
+                $query->where('country', $filters['country']);
             }
-        }
 
-        if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
+            if (!empty($filters['period']) && $filters['period'] !== 'all') {
+                $months = match ($filters['period']) {
+                    '1_month' => 1,
+                    '3_months' => 3,
+                    '6_months' => 6,
+                    '1_year' => 12,
+                    '2_years' => 24,
+                    default => null,
+                };
 
-        if (!empty($filters['domains'])) {
-            $domain = $filters['domains'];
-            $query->whereHas('offer.manifestation', function ($q) use ($domain) {
-                $q->whereJsonContains('domains', $domain);
-            });
-        }
+                if ($months) {
+                    $query->where('created_at', '>=', now()->subMonths($months));
+                }
+            }
 
-        if (!empty($filters['score_min'])) {
-            $scoreMin = $filters['score_min'];
-            $query->whereHas('offer.manifestation', function ($q) use ($scoreMin) {
-                $q->where('score', '>=', $scoreMin);
-            });
-        }
+            if (!empty($filters['status'])) {
+                $query->where('status', $filters['status']);
+            }
 
-        $total = (clone $query)->count();
-        $ongoing = (clone $query)->where('status', 'ongoing')->count();
-        $completed = (clone $query)->where('status', 'completed')->count();
+            if (!empty($filters['domains'])) {
+                $domain = $filters['domains'];
+                $query->whereHas('offer.manifestation', function ($q) use ($domain) {
+                    $q->whereJsonContains('domains', $domain);
+                });
+            }
 
-        // Pour les projets en retard et dépassement budget, on filtre aussi
-        $delayedQuery = (clone $query)
-            ->where('status', '!=', 'completed')
-            ->where('status', '!=', 'cancelled')
-            ->where('planned_end_date', '<', now());
-        $delayed = $delayedQuery->count();
+            if (!empty($filters['score_min'])) {
+                $scoreMin = $filters['score_min'];
+                $query->whereHas('offer.manifestation', function ($q) use ($scoreMin) {
+                    $q->where('score', '>=', $scoreMin);
+                });
+            }
 
-        $overBudgetQuery = (clone $query)->whereColumn('consumed_budget', '>', 'total_budget');
-        $overBudget = $overBudgetQuery->count();
+            $total = (clone $query)->count();
+            $ongoing = (clone $query)->where('status', 'ongoing')->count();
+            $completed = (clone $query)->where('status', 'completed')->count();
 
-        $totalBudget = (clone $query)->sum('total_budget');
-        $consumedBudget = (clone $query)->sum('consumed_budget');
+            $delayedQuery = (clone $query)
+                ->where('status', '!=', 'completed')
+                ->where('status', '!=', 'cancelled')
+                ->where('planned_end_date', '<', now());
+            $delayed = $delayedQuery->count();
 
-        return [
-            'total' => $total,
-            'ongoing' => $ongoing,
-            'completed' => $completed,
-            'delayed' => $delayed,
-            'over_budget' => $overBudget,
-            'total_budget' => $totalBudget,
-            'consumed_budget' => $consumedBudget,
-            'budget_utilization' => $totalBudget > 0 ? ($consumedBudget / $totalBudget) * 100 : 0,
-        ];
+            $overBudgetQuery = (clone $query)->whereColumn('consumed_budget', '>', 'total_budget')->where('total_budget', '>', 0);
+            $overBudget = $overBudgetQuery->count();
+
+            $totalBudget = (clone $query)->sum('total_budget');
+            $consumedBudget = (clone $query)->sum('consumed_budget');
+
+            return [
+                'total' => $total,
+                'ongoing' => $ongoing,
+                'completed' => $completed,
+                'delayed' => $delayed,
+                'over_budget' => $overBudget,
+                'total_budget' => $totalBudget,
+                'consumed_budget' => $consumedBudget,
+                'budget_utilization' => $totalBudget > 0 ? ($consumedBudget / $totalBudget) * 100 : 0,
+            ];
+        });
     }
 
     /**
@@ -240,20 +226,27 @@ class ProjectService
 
     /**
      * Crée un projet à partir d'une offre gagnée
+     * Utilise une transaction avec verrou pour garantir l'unicité du code projet.
      */
     public function createFromOffer($offer): Project
     {
-        return Project::create([
-            'title' => $offer->title,
-            'code' => 'PRJ-' . now()->format('Y') . '-' . str_pad(Project::count() + 1, 3, '0', STR_PAD_LEFT),
-            'offer_id' => $offer->id,
-            'client_id' => $offer->client_id,
-            'country' => $offer->country ?? 'France',
-            'status' => 'preparation',
-            'description' => $offer->description,
-            'total_budget' => $offer->financialOffer->total_amount ?? 0,
-            'consumed_budget' => 0,
-            'execution_percentage' => 0,
-        ]);
+        return DB::transaction(function () use ($offer) {
+            // Verrou pessimiste pour éviter les race conditions
+            $count = Project::lockForUpdate()->count();
+            $code = 'PRJ-' . now()->format('Y') . '-' . str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+
+            return Project::create([
+                'title' => $offer->title,
+                'code' => $code,
+                'offer_id' => $offer->id,
+                'client_id' => $offer->client_id,
+                'country' => $offer->country ?? 'Cameroun',
+                'status' => 'preparation',
+                'description' => $offer->description ?? null,
+                'total_budget' => $offer->financialOffer?->total_amount ?? 0,
+                'consumed_budget' => 0,
+                'execution_percentage' => 0,
+            ]);
+        });
     }
 }

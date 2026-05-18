@@ -2,24 +2,42 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
-     * Seed the application's database.
+     * Ordre d'exécution des seeders respectant les dépendances entre tables.
+     *
+     * 1. Rôles & Permissions (Spatie + FilamentShield)
+     * 2. Structure organisationnelle (Départements → Postes)
+     * 3. Utilisateurs (avec rôles et postes)
+     * 4. Données métier indépendantes (Clients, Partenaires, Experts, Documents)
+     * 5. Processus commercial (AMI → Manifestations → Offres → Projets)
+     * 6. Contenu informationnel (Notes de bord, Archives)
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call([
+            // ── Infrastructure ────────────────────────────────────────
+            RoleAndPermissionSeeder::class,
+            DepartmentSeeder::class,
+            UserSeeder::class,
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            // ── Données référentielles ────────────────────────────────
+            ClientSeeder::class,
+            PartnerSeeder::class,
+            ExpertSeeder::class,
+            AdministrativeDocumentSeeder::class,
+
+            // ── Processus commercial ──────────────────────────────────
+            AvisManifestationSeeder::class,
+            OfferSeeder::class,
+            ProjectSeeder::class,
+
+            // ── Contenu informationnel ────────────────────────────────
+            SecureViewSeeder::class,
+            ArchiveSeeder::class,
         ]);
     }
 }

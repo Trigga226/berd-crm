@@ -3,31 +3,29 @@
 namespace App\Observers;
 
 use App\Models\ProjectExpertContract;
-use App\Models\SecureView;
-use Illuminate\Support\Facades\Auth;
+use App\Observers\Concerns\LogsToSecureView;
 
 class ProjectExpertContractObserver
 {
+    use LogsToSecureView;
+
     /**
      * Handle the ProjectExpertContract "created" event.
      */
     public function created(ProjectExpertContract $projectExpertContract): void
     {
-        $user = Auth::user();
+        // Recalcul du budget consommé du projet
+        $projectExpertContract->project?->updateCalculations();
 
-        if (!$user) {
-            return;
-        }
+        $expertName = $projectExpertContract->expert
+            ? "{$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}"
+            : 'N/A';
 
-        $secureView = new SecureView();
-
-        $secureView->titre = "Création d'un contrat expert de projet ";
-        $secureView->description = "{$user->name}, identifier par le mail {$user->email} a cree un contrat expert de projet pour : {$projectExpertContract->project->title} du nom de {$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}";
-        $secureView->auteur = $user->id;
-        $secureView->date = date('Y-m-d H:i:s');
-        $secureView->type = "Création";
-
-        $secureView->save();
+        $this->logAction(
+            "Création d'un contrat expert de projet",
+            "Création du contrat expert ({$expertName}) pour le projet : {$projectExpertContract->project?->title}",
+            'Création'
+        );
     }
 
     /**
@@ -35,21 +33,17 @@ class ProjectExpertContractObserver
      */
     public function updated(ProjectExpertContract $projectExpertContract): void
     {
-        $user = Auth::user();
+        $projectExpertContract->project?->updateCalculations();
 
-        if (!$user) {
-            return;
-        }
+        $expertName = $projectExpertContract->expert
+            ? "{$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}"
+            : 'N/A';
 
-        $secureView = new SecureView();
-
-        $secureView->titre = "Modification d'un contrat expert de projet ";
-        $secureView->description = "{$user->name}, identifier par le mail {$user->email} a modifié un contrat expert de projet pour : {$projectExpertContract->project->title} du nom de {$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}";
-        $secureView->auteur = $user->id;
-        $secureView->date = date('Y-m-d H:i:s');
-        $secureView->type = "Modification";
-
-        $secureView->save();
+        $this->logAction(
+            "Modification d'un contrat expert de projet",
+            "Modification du contrat expert ({$expertName}) pour le projet : {$projectExpertContract->project?->title}",
+            'Modification'
+        );
     }
 
     /**
@@ -57,21 +51,17 @@ class ProjectExpertContractObserver
      */
     public function deleted(ProjectExpertContract $projectExpertContract): void
     {
-        $user = Auth::user();
+        $projectExpertContract->project?->updateCalculations();
 
-        if (!$user) {
-            return;
-        }
+        $expertName = $projectExpertContract->expert
+            ? "{$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}"
+            : 'N/A';
 
-        $secureView = new SecureView();
-
-        $secureView->titre = "Suppression d'un contrat expert de projet ";
-        $secureView->description = "{$user->name}, identifier par le mail {$user->email} a supprimé un contrat expert de projet pour : {$projectExpertContract->project->title} du nom de {$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}";
-        $secureView->auteur = $user->id;
-        $secureView->date = date('Y-m-d H:i:s');
-        $secureView->type = "Suppression";
-
-        $secureView->save();
+        $this->logAction(
+            "Suppression d'un contrat expert de projet",
+            "Suppression du contrat expert ({$expertName}) pour le projet : {$projectExpertContract->project?->title}",
+            'Suppression'
+        );
     }
 
     /**
@@ -79,21 +69,17 @@ class ProjectExpertContractObserver
      */
     public function restored(ProjectExpertContract $projectExpertContract): void
     {
-        $user = Auth::user();
+        $projectExpertContract->project?->updateCalculations();
 
-        if (!$user) {
-            return;
-        }
+        $expertName = $projectExpertContract->expert
+            ? "{$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}"
+            : 'N/A';
 
-        $secureView = new SecureView();
-
-        $secureView->titre = "Restauration d'un contrat expert de projet ";
-        $secureView->description = "{$user->name}, identifier par le mail {$user->email} a restauré un contrat expert de projet pour : {$projectExpertContract->project->title} du nom de {$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}";
-        $secureView->auteur = $user->id;
-        $secureView->date = date('Y-m-d H:i:s');
-        $secureView->type = "Restauration";
-
-        $secureView->save();
+        $this->logAction(
+            "Restauration d'un contrat expert de projet",
+            "Restauration du contrat expert ({$expertName}) pour le projet : {$projectExpertContract->project?->title}",
+            'Restauration'
+        );
     }
 
     /**
@@ -101,20 +87,10 @@ class ProjectExpertContractObserver
      */
     public function forceDeleted(ProjectExpertContract $projectExpertContract): void
     {
-        $user = Auth::user();
-
-        if (!$user) {
-            return;
-        }
-
-        $secureView = new SecureView();
-
-        $secureView->titre = "Suppression définitive d'un contrat expert de projet ";
-        $secureView->description = "{$user->name}, identifier par le mail {$user->email} a supprimé définitivement un contrat expert de projet pour : {$projectExpertContract->project->title} du nom de {$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}";
-        $secureView->auteur = $user->id;
-        $secureView->date = date('Y-m-d H:i:s');
-        $secureView->type = "Suppression définitive";
-
-        $secureView->save();
+        $this->logAction(
+            "Suppression définitive d'un contrat expert de projet",
+            "Suppression définitive du contrat expert pour le projet : {$projectExpertContract->project?->title}",
+            'Suppression définitive'
+        );
     }
 }
