@@ -68,6 +68,22 @@ class SendProjectAlertNotifications extends Command
             $notificationCount += $recipients->count();
         }
 
+        // ─── Budget à 80% ─────────────────────────────────────────────────
+        $budgetWarningProjects = Project::query()
+            ->where('total_budget', '>', 0)
+            ->whereRaw('consumed_budget / total_budget >= 0.8')
+            ->whereColumn('consumed_budget', '<=', 'total_budget')
+            ->where('status', '!=', 'completed')
+            ->where('status', '!=', 'cancelled')
+            ->get();
+
+        foreach ($budgetWarningProjects as $project) {
+            $recipients->each(fn ($user) =>
+                $user->notify(new ProjectDelayedNotification($project, 'budget_warning'))
+            );
+            $notificationCount += $recipients->count();
+        }
+
         // ─── Factures impayées en retard ──────────────────────────────────
         $overdueInvoices = ProjectInvoice::query()
             ->where('status', '!=', 'paid')

@@ -89,12 +89,20 @@ class ActivitiesRelationManager extends RelationManager
                 TextEntry::make('planned_start_date')->date()->label('Début prévu'),
                 TextEntry::make('planned_end_date')->date()->label('Fin prévue'),
                 TextEntry::make('status')
+                    ->label('Statut')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'not_started' => 'Non commencé',
+                        'in_progress' => 'En cours',
+                        'completed'   => 'Terminé',
+                        'blocked'     => 'Bloqué',
+                        default       => $state,
+                    })
                     ->colors([
-                        'gray' => 'not_started',
-                        'info' => 'in_progress',
+                        'gray'    => 'not_started',
+                        'info'    => 'in_progress',
                         'success' => 'completed',
-                        'danger' => 'blocked',
+                        'danger'  => 'blocked',
                     ]),
                 TextEntry::make('responsibleUser.name')->label('Responsable'),
             ]);
@@ -117,12 +125,20 @@ class ActivitiesRelationManager extends RelationManager
                     ->date()
                     ->sortable(),
                 TextColumn::make('status')
+                    ->label('Statut')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'not_started' => 'Non commencé',
+                        'in_progress' => 'En cours',
+                        'completed'   => 'Terminé',
+                        'blocked'     => 'Bloqué',
+                        default       => $state,
+                    })
                     ->colors([
-                        'gray' => 'not_started',
-                        'info' => 'in_progress',
+                        'gray'    => 'not_started',
+                        'info'    => 'in_progress',
                         'success' => 'completed',
-                        'danger' => 'blocked',
+                        'danger'  => 'blocked',
                     ]),
                 TextColumn::make('responsibleUser.name')
                     ->label('Responsable')

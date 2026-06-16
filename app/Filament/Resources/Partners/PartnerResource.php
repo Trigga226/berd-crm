@@ -30,6 +30,21 @@ class PartnerResource extends Resource
     protected static ?string $modelLabel = 'Partenaire';
     protected static ?string $pluralModelLabel = 'Partenaires';
 
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'email', 'ifu'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Type'  => $record->type ?? '—',
+            'Email' => $record->email ?? '—',
+        ];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return PartnerForm::configure($schema);
@@ -48,7 +63,7 @@ class PartnerResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\ManifestationsRelationManager::class,
         ];
     }
 

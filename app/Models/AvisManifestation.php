@@ -20,11 +20,16 @@ class AvisManifestation extends Model
         'file_path',
         'status',
         'submission_date',
+        'domains',
+        'ai_score',
+        'ai_summary',
     ];
 
     protected $casts = [
-        'deadline' => 'datetime',
+        'deadline'        => 'datetime',
         'submission_date' => 'date',
+        'domains'         => 'array',
+        'ai_score'        => 'decimal:1',
     ];
 
     public function client()

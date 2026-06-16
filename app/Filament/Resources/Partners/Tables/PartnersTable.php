@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Partners\Tables;
 
+use App\Filament\Actions\ExportCsvAction;
 use App\Utils\Pays;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -11,6 +12,7 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class PartnersTable
 {
@@ -76,17 +78,28 @@ class PartnersTable
                     ->label('Pays')
                     ->options(Pays::$LISTEPAYS)
                     ->searchable(),
-                TrashedFilter::make(),
+                TrashedFilter::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
             ])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
             ])
             ->toolbarActions([
+                ExportCsvAction::make()
+                    ->filename('partenaires.csv')
+                    ->columns([
+                        'Nom'          => fn($r) => $r->name ?? '',
+                        'Type'         => fn($r) => $r->type ?? '',
+                        'Email'        => fn($r) => $r->email ?? '',
+                        'Téléphone'    => fn($r) => $r->phone ?? '',
+                        'Pays'         => fn($r) => $r->country ?? '',
+                        'Spécialités'  => fn($r) => implode(', ', $r->domains ?? []),
+                        'Références'   => fn($r) => $r->references_count ?? 0,
+                    ]),
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
+                    ForceDeleteBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
+                    RestoreBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
                 ]),
             ]);
     }

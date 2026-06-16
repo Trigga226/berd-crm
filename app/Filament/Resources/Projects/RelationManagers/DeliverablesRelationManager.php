@@ -108,12 +108,19 @@ class DeliverablesRelationManager extends RelationManager
                     ->sortable(),
                 TextColumn::make('status')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'pending'   => 'En attente',
+                        'submitted' => 'Soumis',
+                        'validated' => 'Validé',
+                        'rejected'  => 'Rejeté',
+                        default     => $state,
+                    })
                     ->color(fn(string $state): string => match ($state) {
-                        'pending' => 'gray',
+                        'pending'   => 'gray',
                         'submitted' => 'info',
                         'validated' => 'success',
-                        'rejected' => 'danger',
-                        default => 'gray',
+                        'rejected'  => 'danger',
+                        default     => 'gray',
                     })
                     ->label('Statut'),
                 TextColumn::make('file_path')

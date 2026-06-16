@@ -132,12 +132,20 @@ class ExpertContractsRelationManager extends RelationManager
                     ->color(fn ($record) => ($record->actual_days ?? 0) > ($record->planned_days ?? 0) ? 'danger' : 'success')
                     ->sortable(),
                 TextColumn::make('status')
+                    ->label('Statut')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'draft'      => 'Brouillon',
+                        'active'     => 'Actif',
+                        'completed'  => 'Terminé',
+                        'terminated' => 'Résilié',
+                        default      => $state,
+                    })
                     ->color(fn(string $state): string => match ($state) {
-                        'draft' => 'gray',
-                        'active', 'completed' => 'success',
-                        'terminated' => 'danger',
-                        default => 'gray',
+                        'draft'                  => 'gray',
+                        'active', 'completed'    => 'success',
+                        'terminated'             => 'danger',
+                        default                  => 'gray',
                     }),
                 TextColumn::make('contract_path')
                     ->label('Contrat')

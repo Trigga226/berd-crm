@@ -3,13 +3,32 @@
 namespace App\Filament\Resources\Offers\Pages;
 
 use App\Filament\Resources\Offers\OfferResource;
+use App\Models\Manifestation;
 use Filament\Resources\Pages\CreateRecord;
-
 use Illuminate\Database\Eloquent\Model;
 
 class CreateOffer extends CreateRecord
 {
     protected static string $resource = OfferResource::class;
+
+    public function mount(): void
+    {
+        parent::mount();
+
+        $manifestationId = request()->query('manifestation_id');
+
+        if ($manifestationId) {
+            $manifestation = Manifestation::with('avisManifestation')->find($manifestationId);
+
+            if ($manifestation) {
+                $this->form->fill([
+                    'manifestation_id' => $manifestation->id,
+                    'title'            => $manifestation->avisManifestation?->title ?? '',
+                    'country'          => $manifestation->country,
+                ]);
+            }
+        }
+    }
 
     protected function handleRecordCreation(array $data): Model
     {

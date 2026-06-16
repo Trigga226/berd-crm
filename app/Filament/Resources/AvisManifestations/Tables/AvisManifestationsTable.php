@@ -2,18 +2,18 @@
 
 namespace App\Filament\Resources\AvisManifestations\Tables;
 
+use App\Filament\Actions\ExportCsvAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
-use Filament\Tables\Filters\TrashedFilter;
-use Filament\Tables\Table;
-
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 
 class AvisManifestationsTable
@@ -92,17 +92,28 @@ class AvisManifestationsTable
                     }),
 
 
-                \Filament\Tables\Filters\TrashedFilter::make()->visible(Auth::user()->isSuperAdmin()),
+                \Filament\Tables\Filters\TrashedFilter::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
             ])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
             ])
             ->toolbarActions([
+                ExportCsvAction::make()
+                    ->filename('avis-manifestations.csv')
+                    ->columns([
+                        'Référence'    => fn($r) => $r->reference_number ?? '',
+                        'Titre'        => fn($r) => $r->title ?? '',
+                        'Client'       => fn($r) => $r->client?->name ?? '',
+                        'Date Limite'  => fn($r) => $r->deadline?->format('d/m/Y') ?? '',
+                        'Statut'       => fn($r) => $r->status ?? '',
+                        'Score IA'     => fn($r) => $r->ai_score ?? '',
+                        'Domaines'     => fn($r) => implode(', ', $r->domains ?? []),
+                    ]),
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
-                    RestoreBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
+                    ForceDeleteBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
+                    RestoreBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
                 ]),
             ])
             ->defaultSort('deadline', 'asc');

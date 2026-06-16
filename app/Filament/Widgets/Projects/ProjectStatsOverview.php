@@ -8,6 +8,7 @@ use App\Services\ProjectService;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
+use Illuminate\Support\Facades\Cache;
 
 class ProjectStatsOverview extends BaseWidget
 {
@@ -22,18 +23,20 @@ class ProjectStatsOverview extends BaseWidget
 
     protected function getStats(): array
     {
-        $service = app(ProjectService::class);
-
-        // Récupérer les filtres du dashboard
         $filters = [
-            'country' => $this->filters['country'] ?? null,
-            'period' => $this->filters['period'] ?? null,
-            'status' => $this->filters['status'] ?? null,
-            'domains' => $this->filters['domains'] ?? null,
+            'country'   => $this->filters['country'] ?? null,
+            'period'    => $this->filters['period'] ?? null,
+            'status'    => $this->filters['status'] ?? null,
+            'domains'   => $this->filters['domains'] ?? null,
             'score_min' => $this->filters['score_min'] ?? null,
         ];
 
-        $stats = $service->getGlobalStats($filters);
+        $version  = Cache::get('berd_stats_version', 0);
+        $cacheKey = "project_stats_{$version}_" . md5(json_encode($filters));
+
+        $stats = Cache::remember($cacheKey, 300, function () use ($filters) {
+            return app(ProjectService::class)->getGlobalStats($filters);
+        });
 
         return [
             Stat::make('Total Projets', $stats['total'])

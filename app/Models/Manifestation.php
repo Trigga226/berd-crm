@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Slimani\MediaManager\Concerns\InteractsWithMediaFiles;
 
 class Manifestation extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, InteractsWithMediaFiles;
 
     protected $fillable = [
         'avis_manifestation_id',
@@ -78,6 +79,11 @@ class Manifestation extends Model
     public function leadPartner()
     {
         return $this->belongsTo(Partner::class, 'lead_partner_id');
+    }
+
+    public function offers()
+    {
+        return $this->hasMany(Offer::class);
     }
 
     public function experts()

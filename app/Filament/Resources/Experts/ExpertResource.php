@@ -27,7 +27,24 @@ class ExpertResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';
 
+    protected static ?string $modelLabel = 'Expert';
+    protected static ?string $pluralModelLabel = 'Experts';
+
     protected static ?string $recordTitleAttribute = 'last_name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['first_name', 'last_name', 'email'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Email'      => $record->email ?? '—',
+            'Expérience' => $record->years_of_experience ? $record->years_of_experience . ' ans' : '—',
+            'Note'       => $record->rating ? str_repeat('⭐', $record->rating) : '—',
+        ];
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -47,7 +64,8 @@ class ExpertResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\ManifestationsRelationManager::class,
+            RelationManagers\ProjectContractsRelationManager::class,
         ];
     }
 

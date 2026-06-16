@@ -109,13 +109,22 @@ class InvoicesRelationManager extends RelationManager
                 TextEntry::make('amount')->money('XOF')->label('Montant'),
                 TextEntry::make('paid_amount')->money('XOF')->label('Payé'),
                 TextEntry::make('status')
+                    ->label('Statut')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'draft'     => 'Brouillon',
+                        'sent'      => 'Envoyée',
+                        'paid'      => 'Payée',
+                        'overdue'   => 'En retard',
+                        'cancelled' => 'Annulée',
+                        default     => $state,
+                    })
                     ->color(fn(string $state): string => match ($state) {
-                        'draft' => 'gray',
-                        'sent' => 'info',
-                        'paid' => 'success',
+                        'draft'              => 'gray',
+                        'sent'               => 'info',
+                        'paid'               => 'success',
                         'overdue', 'cancelled' => 'danger',
-                        default => 'gray',
+                        default              => 'gray',
                     }),
             ]);
     }
@@ -141,13 +150,22 @@ class InvoicesRelationManager extends RelationManager
                     ->money('XOF')
                     ->sortable(),
                 TextColumn::make('status')
+                    ->label('Statut')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'draft'     => 'Brouillon',
+                        'sent'      => 'Envoyée',
+                        'paid'      => 'Payée',
+                        'overdue'   => 'En retard',
+                        'cancelled' => 'Annulée',
+                        default     => $state,
+                    })
                     ->color(fn(string $state): string => match ($state) {
-                        'draft' => 'gray',
-                        'sent' => 'info',
-                        'paid' => 'success',
+                        'draft'                => 'gray',
+                        'sent'                 => 'info',
+                        'paid'                 => 'success',
                         'overdue', 'cancelled' => 'danger',
-                        default => 'gray',
+                        default                => 'gray',
                     }),
                 TextColumn::make('file_path')
                     ->label('Document')

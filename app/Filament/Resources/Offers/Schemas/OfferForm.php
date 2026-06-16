@@ -23,6 +23,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Slimani\MediaManager\Form\MediaPicker;
 
 class OfferForm
 {
@@ -115,12 +116,12 @@ class OfferForm
                                                 Select::make('result')
                                                     ->label('Résultat Global')
                                                     ->options([
-                                                        'En attente' => 'En attente',
-                                                        'Gagné' => 'Gagné',
-                                                        'Perdu' => 'Perdu',
-                                                        'Abandonné' => 'Abandonné',
+                                                        'won'       => 'Gagné',
+                                                        'lost'      => 'Perdu',
+                                                        'abandoned' => 'Abandonné',
                                                     ])
-                                                    ->default('En attente'),
+                                                    ->placeholder('En cours')
+                                                    ->default(null),
                                                 TextInput::make('general_note')
                                                     ->label('Note Générale')
                                                     ->numeric()
@@ -200,11 +201,11 @@ class OfferForm
                                                 Select::make('technicalOffer.result')
                                                     ->label('Résultat')
                                                     ->options([
-                                                        'En attente' => 'En attente',
-                                                        'Gagné' => 'Gagné',
-                                                        'Perdu' => 'Perdu',
-                                                        'Abandonné' => 'Abandonné',
-                                                    ]),
+                                                        'won'       => 'Gagné',
+                                                        'lost'      => 'Perdu',
+                                                        'abandoned' => 'Abandonné',
+                                                    ])
+                                                    ->placeholder('En cours'),
                                                 TextInput::make('technicalOffer.note')
                                                     ->label('Note')
                                                     ->numeric()
@@ -296,11 +297,11 @@ class OfferForm
                                                 Select::make('financialOffer.result')
                                                     ->label('Résultat')
                                                     ->options([
-                                                        'En attente' => 'En attente',
-                                                        'Gagné' => 'Gagné',
-                                                        'Perdu' => 'Perdu',
-                                                        'Abandonné' => 'Abandonné',
-                                                    ]),
+                                                        'won'       => 'Gagné',
+                                                        'lost'      => 'Perdu',
+                                                        'abandoned' => 'Abandonné',
+                                                    ])
+                                                    ->placeholder('En cours'),
                                                 TextInput::make('financialOffer.note')
                                                     ->label('Note')
                                                     ->numeric()
@@ -341,6 +342,35 @@ class OfferForm
                                                 self::getDocUpload('fine_other_2', 'Document Additionnel 2', 'offre financiere/autres', 'financialOffer'),
                                                 self::getDocUpload('fine_other_3', 'Document Additionnel 3', 'offre financiere/autres', 'financialOffer'),
                                             ]),
+                                    ]),
+                            ]),
+
+                        // Onglet Médiathèque
+                        Tabs\Tab::make('Médiathèque')
+                            ->icon('heroicon-o-photo')
+                            ->schema([
+                                ComponentsSection::make('Fichiers joints')
+                                    ->description('Attachez des fichiers supplémentaires depuis la médiathèque.')
+                                    ->schema([
+                                        MediaPicker::make('mediaFiles')
+                                            ->label('Documents')
+                                            ->relationship('mediaFiles')
+                                            ->multiple()
+                                            ->directory(fn(Get $get) => 'Offres/' . (Str::slug($get('title')) ?: 'temp'))
+                                            ->acceptedFileTypes([
+                                                'application/pdf',
+                                                'application/msword',
+                                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                                'application/vnd.ms-excel',
+                                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                                'application/vnd.ms-powerpoint',
+                                                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                                                'image/jpeg',
+                                                'image/png',
+                                                'image/webp',
+                                                'application/zip',
+                                            ])
+                                            ->columnSpanFull(),
                                     ]),
                             ]),
                     ])->columnSpanFull(),

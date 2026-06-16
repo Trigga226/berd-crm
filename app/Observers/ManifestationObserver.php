@@ -2,9 +2,12 @@
 
 namespace App\Observers;
 
+use App\Models\Expert;
 use App\Models\Manifestation;
 use App\Models\SecureView;
+use App\Services\ArchiveService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class ManifestationObserver
 {
@@ -28,6 +31,8 @@ class ManifestationObserver
         $secureView->type = "Création";
 
         $secureView->save();
+
+        Cache::increment('berd_stats_version');
     }
 
     /**
@@ -50,6 +55,23 @@ class ManifestationObserver
         $secureView->type = "Modification";
 
         $secureView->save();
+
+        Cache::increment('berd_stats_version');
+
+        // Archivage automatique lorsque la manifestation atteint un statut terminal
+        if ($manifestation->wasChanged('status') &&
+            in_array($manifestation->status, ['won', 'lost', 'abandoned'])) {
+            app(ArchiveService::class)->archiverManifestation($manifestation);
+        }
+
+        // Mise à jour du compteur de manifestations gagnées sur les experts liés
+        if ($manifestation->wasChanged('status') && $manifestation->status === 'won') {
+            $manifestation->loadMissing('experts');
+            $manifestation->experts->each(function (Expert $expert) {
+                $count = $expert->manifestations()->where('status', 'won')->count();
+                $expert->updateQuietly(['won_manifestations_count' => $count]);
+            });
+        }
     }
 
     /**
@@ -72,6 +94,8 @@ class ManifestationObserver
         $secureView->type = "Suppression";
 
         $secureView->save();
+
+        Cache::increment('berd_stats_version');
     }
 
     /**

@@ -26,4 +26,19 @@ class Client extends Model
         'contact_email',
         'contact_phone',
     ];
+
+    public function avisManifestations()
+    {
+        return $this->hasMany(AvisManifestation::class);
+    }
+
+    public function offers()
+    {
+        return $this->hasMany(Offer::class);
+    }
+
+    public function projects()
+    {
+        return $this->hasMany(Project::class);
+    }
 }

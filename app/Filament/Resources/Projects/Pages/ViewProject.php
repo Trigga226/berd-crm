@@ -7,7 +7,10 @@ use App\Filament\Widgets\Projects\ProjectFinancialWidget;
 use App\Filament\Widgets\Projects\ProjectKpiWidget;
 use App\Filament\Widgets\Projects\ProjectRiskMatrixWidget;
 use App\Filament\Widgets\Projects\ProjectTimelineWidget;
+use App\Services\ArchiveService;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewProject extends ViewRecord
@@ -17,12 +20,26 @@ class ViewProject extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('print')
+            Action::make('print')
                 ->label('Imprimer Rapport')
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn() => route('projects.print', $this->record))
                 ->openUrlInNewTab(),
+
+            Action::make('archiver')
+                ->label('Archiver')
+                ->icon('heroicon-o-archive-box-arrow-down')
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('Archiver ce projet ?')
+                ->modalDescription('Tous les rapports et livrables associés seront indexés dans les Archives.')
+                ->visible(fn() => in_array($this->getRecord()->status, ['completed', 'cancelled']))
+                ->action(function () {
+                    app(ArchiveService::class)->archiverProjet($this->getRecord());
+                    Notification::make()->success()->title('Projet archivé')->send();
+                }),
+
             EditAction::make(),
         ];
     }

@@ -6,6 +6,7 @@ use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use App\Models\Offer;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class OfferStatsOverview extends StatsOverviewWidget
 {
@@ -32,12 +33,18 @@ class OfferStatsOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $query = $this->getBaseQuery();
+        $filters  = $this->filters ?? [];
+        $version  = Cache::get('berd_stats_version', 0);
+        $cacheKey = "offer_stats_{$version}_" . md5(json_encode($filters));
 
-        // Apply Dashboard Filters
-        $filters = $this->filters;
-        // Offer model filters - aligning with available fields or relationships
-        // Note: Offer has 'country' and 'is_consortium' etc. Manifestation filters were: status, country, domains, period, score_min
+        return Cache::remember($cacheKey, 300, function () use ($filters) {
+            return $this->computeStats($filters);
+        });
+    }
+
+    private function computeStats(array $filters): array
+    {
+        $query = $this->getBaseQuery();
 
         if (!empty($filters['country'])) $query->where('country', $filters['country']);
 

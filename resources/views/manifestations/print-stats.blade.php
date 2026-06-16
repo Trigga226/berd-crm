@@ -106,7 +106,7 @@
                                 @elseif($manifestation->status === 'submitted') bg-blue-100 text-blue-800 
                                 @elseif($manifestation->status === 'abandoned') bg-amber-100 text-amber-800 
                                 @else bg-gray-100 text-gray-800 @endif">
-                                {{ ucfirst($manifestation->status) }}
+                                {{ match($manifestation->status) { 'draft' => 'Brouillon', 'submitted' => 'Soumis', 'won' => 'Gagné', 'lost' => 'Perdu', 'abandoned' => 'Abandonné', default => $manifestation->status } }}
                             </span>
                         </td>
                         <td class="p-2 text-xs font-mono">{{ $manifestation->score ? $manifestation->score .'/100' : '-' }}</td>

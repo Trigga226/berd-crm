@@ -13,17 +13,36 @@ use App\Models\Archive;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Slimani\MediaManager\Models\File;
 
 class ArchiveResource extends Resource
 {
     protected static ?string $model = Archive::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-archive-box';
+    protected static ?string $navigationLabel = 'Archives';
+    protected static \UnitEnum|string|null $navigationGroup = 'Gestion Documentaire';
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $modelLabel = 'Archive';
+    protected static ?string $pluralModelLabel = 'Archives';
+    protected static ?string $recordTitleAttribute = 'titre';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['titre', 'domaine', 'type'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Type'   => $record->type ?? '—',
+            'Année'  => $record->annee ?? '—',
+            'Statut' => $record->statut ?? '—',
+        ];
+    }
 
     public static function form(Schema $schema): Schema
     {

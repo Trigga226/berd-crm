@@ -4,7 +4,9 @@ namespace App\Observers;
 
 use App\Models\Project;
 use App\Models\SecureView;
+use App\Services\ArchiveService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class ProjectObserver
 {
@@ -28,6 +30,8 @@ class ProjectObserver
         $secureView->type = "Création";
 
         $secureView->save();
+
+        Cache::increment('berd_stats_version');
     }
 
     /**
@@ -50,6 +54,14 @@ class ProjectObserver
         $secureView->type = "Modification";
 
         $secureView->save();
+
+        Cache::increment('berd_stats_version');
+
+        // Archivage automatique lorsque le projet atteint un statut terminal
+        if ($project->wasChanged('status') &&
+            in_array($project->status, ['completed', 'cancelled'])) {
+            app(ArchiveService::class)->archiverProjet($project);
+        }
     }
 
     /**
@@ -72,6 +84,8 @@ class ProjectObserver
         $secureView->type = "Suppression";
 
         $secureView->save();
+
+        Cache::increment('berd_stats_version');
     }
 
     /**

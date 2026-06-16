@@ -7,6 +7,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 use Filament\Widgets\Concerns\InteractsWithPageTable;
 use App\Models\Manifestation;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class ManifestationStatsOverview extends StatsOverviewWidget
 {
@@ -30,10 +31,20 @@ class ManifestationStatsOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
+        $filters  = $this->filters ?? [];
+        $version  = Cache::get('berd_stats_version', 0);
+        $cacheKey = "manifestation_stats_{$version}_" . md5(json_encode($filters));
+
+        return Cache::remember($cacheKey, 300, function () use ($filters) {
+            return $this->computeStats($filters);
+        });
+    }
+
+    private function computeStats(array $filters): array
+    {
         $query = $this->getBaseQuery();
 
         // Apply Dashboard Filters
-        $filters = $this->filters;
         if (!empty($filters['status'])) $query->where('status', $filters['status']);
         if (!empty($filters['country'])) $query->where('country', $filters['country']);
         if (!empty($filters['domains'])) $query->whereJsonContains('domains', $filters['domains']);

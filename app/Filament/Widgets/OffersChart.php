@@ -15,7 +15,7 @@ class OffersChart extends ChartWidget
 
     protected ?string $heading = 'Évolution des Offres';
 
-    protected static ?int $sort = 8;
+    protected static ?int $sort = 12;
 
     protected int|string|array $columnSpan = 'full';
 

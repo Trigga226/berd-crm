@@ -34,6 +34,22 @@ class ProjectResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Projets';
 
+    protected static ?string $recordTitleAttribute = 'title';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'code', 'country', 'description'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Statut'  => $record->status ?? '—',
+            'Client'  => $record->client?->name ?? '—',
+            'Code'    => $record->code ?? '—',
+        ];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return ProjectForm::configure($schema);

@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 \Illuminate\Support\Facades\Schedule::command('offers:check-deadlines')->dailyAt('08:00');
 \Illuminate\Support\Facades\Schedule::command('alerts:send')->dailyAt('09:00');
 \Illuminate\Support\Facades\Schedule::command('projects:send-alerts')->dailyAt('08:30');
+\Illuminate\Support\Facades\Schedule::command('experts:check-contracts')->dailyAt('08:00');

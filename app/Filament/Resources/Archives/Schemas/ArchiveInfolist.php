@@ -57,13 +57,19 @@ class ArchiveInfolist
                         TextEntry::make('fichier')
                             ->label('Anciens fichiers (héritage)')
                             ->visible(fn($record) => !empty($record->fichier))
+                            ->state(fn($record) => collect($record->fichier ?? [])
+                                ->map(fn($f) => is_array($f) ? ($f['chemin'] ?? null) : $f)
+                                ->filter()
+                                ->values()
+                                ->toArray()
+                            )
                             ->listWithLineBreaks()
                             ->bulleted()
-                            ->formatStateUsing(fn($state) => basename($state))
+                            ->formatStateUsing(fn($state) => is_string($state) ? basename($state) : '—')
                             ->icon('heroicon-o-document')
                             ->iconColor('gray')
                             ->color('gray')
-                            ->url(fn($state) => asset('storage/' . $state), true)
+                            ->url(fn($state) => is_string($state) ? asset('storage/' . $state) : null, true)
                             ->columnSpanFull(),
                     ]),
             ]);

@@ -25,6 +25,20 @@ class PosteResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-briefcase';
 
+    protected static ?string $recordTitleAttribute = 'title';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'description'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Département' => $record->department?->name ?? '—',
+        ];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return PosteForm::configure($schema);

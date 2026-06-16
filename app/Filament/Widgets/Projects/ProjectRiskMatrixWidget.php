@@ -15,7 +15,7 @@ class ProjectRiskMatrixWidget extends Widget
 
     public ?int $projectId = null;
 
-    protected static ?int $sort = 10;
+    protected static ?int $sort = 14;
 
     protected int|string|array $columnSpan = 'full';
 

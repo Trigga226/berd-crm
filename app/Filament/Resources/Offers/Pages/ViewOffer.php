@@ -3,12 +3,14 @@
 namespace App\Filament\Resources\Offers\Pages;
 
 use App\Filament\Resources\Offers\OfferResource;
-use Filament\Actions\EditAction;
-use Filament\Resources\Pages\ViewRecord;
-
-use Filament\Actions\Action;
-use Filament\Notifications\Notification;
+use App\Filament\Resources\Projects\ProjectResource;
+use App\Services\ArchiveService;
 use App\Services\OfferPdfService;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
+use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Support\Facades\Storage;
 
 class ViewOffer extends ViewRecord
 {
@@ -17,33 +19,78 @@ class ViewOffer extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('generateTechnicalOffer')
-                ->label('Générer Offre Technique')
-                ->color('primary')
-                ->action(function (OfferPdfService $service) {
-                    $pdf = $service->generateTechnicalOfferPdf($this->getRecord());
-                    if (!$pdf) {
-                        Notification::make()
-                            ->title('Aucun document technique trouvé')
-                            ->danger()
-                            ->send();
-                        return;
-                    }
-                    return $pdf;
-                }),
-            Action::make('generateFinancialOffer')
-                ->label('Générer Offre Financière')
+            Action::make('creer_projet')
+                ->label('Créer un Projet')
+                ->icon('heroicon-o-document-plus')
                 ->color('success')
-                ->action(function (OfferPdfService $service) {
-                    $pdf = $service->generateFinancialOfferPdf($this->getRecord());
-                    if (!$pdf) {
+                ->visible(fn() => $this->getRecord()->result === 'won')
+                ->url(fn() => ProjectResource::getUrl('create') . '?offer_id=' . $this->getRecord()->id),
+
+            Action::make('archiver')
+                ->label('Archiver')
+                ->icon('heroicon-o-archive-box-arrow-down')
+                ->color('gray')
+                ->requiresConfirmation()
+                ->visible(fn() => in_array($this->getRecord()->result, ['won', 'lost', 'abandoned']))
+                ->action(function () {
+                    app(ArchiveService::class)->archiverOffre($this->getRecord());
+                    Notification::make()->success()->title('Offre archivée')->send();
+                }),
+
+            Action::make('generateTechnicalOffer')
+                ->label('Offre Technique PDF')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('primary')
+                ->action(function () {
+                    try {
+                        $path = app(OfferPdfService::class)->saveToStorage($this->getRecord(), 'technical');
+                        if (!$path) {
+                            Notification::make()->title('Aucun document technique trouvé')->danger()->send();
+                            return;
+                        }
+                        $url = Storage::disk('public')->url($path);
                         Notification::make()
-                            ->title('Aucun document financier trouvé')
-                            ->danger()
+                            ->title('Offre Technique PDF prête')
+                            ->body('Le dossier technique a été compilé avec succès.')
+                            ->actions([
+                                Action::make('download')
+                                    ->label('Télécharger')
+                                    ->url($url)
+                                    ->openUrlInNewTab(),
+                            ])
+                            ->success()
                             ->send();
-                        return;
+                    } catch (\Exception $e) {
+                        Notification::make()->title('Erreur PDF')->body($e->getMessage())->danger()->send();
                     }
-                    return $pdf;
+                }),
+
+            Action::make('generateFinancialOffer')
+                ->label('Offre Financière PDF')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('success')
+                ->action(function () {
+                    try {
+                        $path = app(OfferPdfService::class)->saveToStorage($this->getRecord(), 'financial');
+                        if (!$path) {
+                            Notification::make()->title('Aucun document financier trouvé')->danger()->send();
+                            return;
+                        }
+                        $url = Storage::disk('public')->url($path);
+                        Notification::make()
+                            ->title('Offre Financière PDF prête')
+                            ->body('Le dossier financier a été compilé avec succès.')
+                            ->actions([
+                              Action::make('download')
+                                    ->label('Télécharger')
+                                    ->url($url)
+                                    ->openUrlInNewTab(),
+                            ])
+                            ->success()
+                            ->send();
+                    } catch (\Exception $e) {
+                        Notification::make()->title('Erreur PDF')->body($e->getMessage())->danger()->send();
+                    }
                 }),
             EditAction::make(),
         ];

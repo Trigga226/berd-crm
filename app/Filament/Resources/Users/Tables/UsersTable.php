@@ -31,11 +31,10 @@ class UsersTable
                     ->badge()
                     ->state(function ($record) {
                         $role = $record->roles->first();
-                        if ($role->name === "super_admin") {
-                            return "Admin";
-                        } else {
-                            return $role->name;
+                        if (!$role) {
+                            return 'Aucun rôle';
                         }
+                        return $role->name === 'super_admin' ? 'Admin' : $role->name;
                     })
                     ->searchable(),
                 TextColumn::make('poste.title')
@@ -50,7 +49,7 @@ class UsersTable
 
             ])
             ->filters([
-                TrashedFilter::make()->visible(Auth::user()->isSuperAdmin()),
+                TrashedFilter::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -59,8 +58,8 @@ class UsersTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
-                    RestoreBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
+                    ForceDeleteBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
+                    RestoreBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
                 ]),
             ]);
     }

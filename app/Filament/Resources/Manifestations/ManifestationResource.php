@@ -27,6 +27,34 @@ class ManifestationResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
 
+    protected static ?string $recordTitleAttribute = 'client_name';
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return $record->avisManifestation?->title ?? $record->client_name ?? "Manifestation #{$record->id}";
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['client_name', 'country', 'observation', 'avisManifestation.title'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Statut' => match ($record->status ?? '') {
+                'draft'     => 'Brouillon',
+                'submitted' => 'Soumis',
+                'won'       => 'Gagné',
+                'lost'      => 'Perdu',
+                'abandoned' => 'Abandonné',
+                default     => $record->status ?? '—',
+            },
+            'Client' => $record->client_name ?? '—',
+            'Pays'   => $record->country ?? '—',
+        ];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return ManifestationForm::configure($schema);
@@ -45,7 +73,7 @@ class ManifestationResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\OffersRelationManager::class,
         ];
     }
 

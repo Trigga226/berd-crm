@@ -16,7 +16,7 @@ class ManifestationsChart extends ChartWidget
 
     protected ?string $heading = 'Évolution des Manifestations';
 
-    protected static ?int $sort = 7;
+    protected static ?int $sort = 11;
 
      protected int|string|array $columnSpan = 'full';
 

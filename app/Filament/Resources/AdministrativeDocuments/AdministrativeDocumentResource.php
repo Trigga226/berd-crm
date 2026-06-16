@@ -36,6 +36,21 @@ class AdministrativeDocumentResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-folder-open';
 
+    protected static ?string $recordTitleAttribute = 'title';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'category', 'description'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Catégorie' => $record->category ?? '—',
+            'Expiration' => $record->expiration_date?->format('d/m/Y') ?? '—',
+        ];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return \App\Filament\Resources\AdministrativeDocuments\Schemas\AdministrativeDocumentForm::configure($schema);

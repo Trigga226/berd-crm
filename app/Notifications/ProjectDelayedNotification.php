@@ -40,6 +40,12 @@ class ProjectDelayedNotification extends Notification
                 'color' => 'danger',
                 'icon'  => 'heroicon-o-banknotes',
             ],
+            'budget_warning' => [
+                'title' => "Alerte budget 80% : {$this->project->title}",
+                'body'  => "80% du budget a été consommé ({$this->project->consumed_budget} / {$this->project->total_budget}).",
+                'color' => 'warning',
+                'icon'  => 'heroicon-o-banknotes',
+            ],
             default => [
                 'title' => "Alerte projet : {$this->project->title}",
                 'body'  => 'Une attention est requise sur ce projet.',

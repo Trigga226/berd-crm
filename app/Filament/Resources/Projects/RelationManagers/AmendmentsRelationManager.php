@@ -86,11 +86,18 @@ class AmendmentsRelationManager extends RelationManager
                 TextEntry::make('signature_date')->date(),
                 TextEntry::make('budget_impact')->money('XOF'),
                 TextEntry::make('status')
+                    ->label('Statut')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'draft'     => 'Brouillon',
+                        'signed'    => 'Signé',
+                        'cancelled' => 'Annulé',
+                        default     => $state,
+                    })
                     ->colors([
-                        'gray' => 'draft',
+                        'gray'    => 'draft',
                         'success' => 'signed',
-                        'danger' => 'cancelled',
+                        'danger'  => 'cancelled',
                     ]),
             ]);
     }
@@ -116,11 +123,18 @@ class AmendmentsRelationManager extends RelationManager
                     ->suffix(' jours')
                     ->sortable(),
                 TextColumn::make('status')
+                    ->label('Statut')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'draft'     => 'Brouillon',
+                        'signed'    => 'Signé',
+                        'cancelled' => 'Annulé',
+                        default     => $state,
+                    })
                     ->colors([
-                        'gray' => 'draft',
+                        'gray'    => 'draft',
                         'success' => 'signed',
-                        'danger' => 'cancelled',
+                        'danger'  => 'cancelled',
                     ]),
                 TextColumn::make('file_path')
                     ->label('Document')

@@ -38,6 +38,18 @@ class ArchiveForm
                             ->required()
                             ->searchable()
                             ->live(),
+                        TextInput::make('annee')
+                            ->label('Année')
+                            ->numeric()
+                            ->minValue(2000)
+                            ->maxValue(2100)
+                            ->default(now()->year)
+                            ->required(),
+                        Select::make('domaine')
+                            ->label('Domaine')
+                            ->options(\App\Utils\Domaines::getOptions())
+                            ->searchable()
+                            ->live(),
                         DatePicker::make('date_archive')
                             ->label('Date d\'archivage')
                             ->required()
@@ -51,9 +63,18 @@ class ArchiveForm
                             ->dehydrated()
                             ->required()
                             ->maxLength(255),
+                        Select::make('statut')
+                            ->label('Statut')
+                            ->options([
+                                'archived' => 'Archivé',
+                                'draft'    => 'Brouillon',
+                                'restaure' => 'Restauré',
+                            ])
+                            ->default('archived')
+                            ->required(),
                         TextInput::make('resultat')
                             ->label('Résultat (Optionnel)')
-                            ->visible(fn(Get $get) => in_array($get('type'), ['Manifestation', 'Offres']))
+                            ->visible(fn(Get $get) => in_array($get('type'), ['Manifestation', 'Offres', 'Livrable']))
                             ->maxLength(255),
                         Textarea::make('observation')
                             ->label('Observation')
@@ -61,13 +82,18 @@ class ArchiveForm
                     ])->columns(2),
 
                 Section::make('Documents')
-                    ->description('Sélectionnez des fichiers depuis la médiathèque ou déposez-en de nouveaux.')
+                    ->description('Sélectionnez des fichiers depuis la médiathèque ou déposez-en de nouveaux. Les fichiers sont organisés par type / année / domaine.')
                     ->schema([
                         MediaPicker::make('mediaFiles')
                             ->label('Documents archivés')
                             ->relationship('mediaFiles')
                             ->multiple()
-                            ->directory(fn(Get $get) => 'Archives/' . ($get('type') ?? 'Divers'))
+                            ->directory(fn(Get $get) =>
+                                'Archives/'
+                                . ($get('type') ?? 'Autre') . '/'
+                                . ($get('annee') ?? now()->year) . '/'
+                                . ($get('domaine') ?? 'General')
+                            )
                             ->acceptedFileTypes([
                                 'application/pdf',
                                 'application/msword',

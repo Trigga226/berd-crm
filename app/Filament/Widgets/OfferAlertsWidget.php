@@ -14,7 +14,7 @@ class OfferAlertsWidget extends TableWidget
 {
     protected static ?string $heading = 'Alertes Offres';
 
-    protected static ?int $sort = 5;
+    protected static ?int $sort = 10;
 
     protected int|string|array $columnSpan = [
         'md' => 2,

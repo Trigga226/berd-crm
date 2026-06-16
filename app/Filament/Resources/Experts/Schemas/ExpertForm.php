@@ -21,15 +21,15 @@ class ExpertForm
         return $schema
             ->components([
                 ComponentsSection::make('CV & Analyse')
-                    ->description('Uploadez le CV pour remplir automatiquement les informations.')
+                    ->description('Uploadez le CV principal pour remplir automatiquement les informations.')
                     ->schema([
                         FileUpload::make('cv_path')
-                            ->label('CV (PDF)')
+                            ->label('CV Principal (PDF)')
                             ->disk('public')
                             ->directory('cv/tmp')
                             ->acceptedFileTypes(['application/pdf'])
                             ->required()
-                            ->live() // Réactif
+                            ->live()
                             ->afterStateUpdated(function (Set $set, $state) {
                                 if (!$state) return;
 
@@ -100,7 +100,51 @@ class ExpertForm
                             ->numeric()
                             ->label("Années d'expérience")
                             ->default(0),
+                        \Filament\Forms\Components\Select::make('rating')
+                            ->label('Note interne')
+                            ->options([
+                                1 => '⭐ (1)',
+                                2 => '⭐⭐ (2)',
+                                3 => '⭐⭐⭐ (3)',
+                                4 => '⭐⭐⭐⭐ (4)',
+                                5 => '⭐⭐⭐⭐⭐ (5)',
+                            ])
+                            ->placeholder('Non noté'),
                     ])->columns(2),
+
+                \Filament\Schemas\Components\Section::make('CV multi-langues')
+                    ->description('Versions du CV par langue pour les soumissions internationales.')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        \Filament\Forms\Components\Repeater::make('cv_paths')
+                            ->label('CVs additionnels')
+                            ->schema([
+                                \Filament\Forms\Components\Select::make('lang')
+                                    ->label('Langue')
+                                    ->options([
+                                        'fr' => '🇫🇷 Français',
+                                        'en' => '🇬🇧 Anglais',
+                                        'pt' => '🇵🇹 Portugais',
+                                        'ar' => '🇩🇿 Arabe',
+                                    ])
+                                    ->required(),
+                                \Filament\Forms\Components\FileUpload::make('path')
+                                    ->label('Fichier PDF')
+                                    ->disk('public')
+                                    ->directory('cv/multilang')
+                                    ->acceptedFileTypes(['application/pdf'])
+                                    ->required()
+                                    ->downloadable(),
+                                TextInput::make('label')
+                                    ->label('Intitulé (optionnel)')
+                                    ->placeholder('ex: CV Banque Mondiale'),
+                            ])
+                            ->columns(3)
+                            ->addActionLabel('Ajouter une version')
+                            ->reorderableWithButtons()
+                            ->columnSpanFull(),
+                    ]),
 
                 \Filament\Schemas\Components\Section::make('Compétences & Expérience')
                     ->schema([

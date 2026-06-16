@@ -12,7 +12,7 @@ class ProjectsChart extends ChartWidget
 
     protected ?string $heading = 'Répartition des Projets par Statut';
 
-    protected static ?int $sort = 9;
+    protected static ?int $sort = 13;
 
     protected int|string|array $columnSpan = 'full';
     protected ?string $maxHeight = '300px';

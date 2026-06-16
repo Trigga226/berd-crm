@@ -4,7 +4,9 @@ namespace App\Observers;
 
 use App\Models\Offer;
 use App\Models\SecureView;
+use App\Services\ArchiveService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class OfferObserver
 {
@@ -28,6 +30,8 @@ class OfferObserver
         $secureView->type = "Création";
 
         $secureView->save();
+
+        Cache::increment('berd_stats_version');
     }
 
     /**
@@ -50,6 +54,14 @@ class OfferObserver
         $secureView->type = "Modification";
 
         $secureView->save();
+
+        Cache::increment('berd_stats_version');
+
+        // Archivage automatique lorsque l'offre atteint un résultat terminal
+        if ($offer->wasChanged('result') &&
+            in_array($offer->result, ['won', 'lost', 'abandoned'])) {
+            app(ArchiveService::class)->archiverOffre($offer);
+        }
     }
 
     /**
@@ -72,6 +84,8 @@ class OfferObserver
         $secureView->type = "Suppression";
 
         $secureView->save();
+
+        Cache::increment('berd_stats_version');
     }
 
     /**

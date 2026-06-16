@@ -27,6 +27,22 @@ class ClientResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
 
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'email', 'ifu', 'phone'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Type'  => $record->type ?? '—',
+            'Email' => $record->email ?? '—',
+            'Tél.'  => $record->phone ?? '—',
+        ];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return ClientForm::configure($schema);
@@ -45,7 +61,8 @@ class ClientResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\ProjectsRelationManager::class,
+            RelationManagers\AvisManifestationsRelationManager::class,
         ];
     }
 

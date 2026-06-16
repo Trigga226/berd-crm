@@ -105,26 +105,45 @@ class RisksRelationManager extends RelationManager
                 TextEntry::make('description')->label('Description'),
                 TextEntry::make('probability')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'low'    => 'Faible',
+                        'medium' => 'Moyenne',
+                        'high'   => 'Élevée',
+                        default  => $state,
+                    })
                     ->colors([
                         'success' => 'low',
                         'warning' => 'medium',
-                        'danger' => 'high',
+                        'danger'  => 'high',
                     ])
                     ->label('Probabilité'),
                 TextEntry::make('impact')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'low'    => 'Faible',
+                        'medium' => 'Moyen',
+                        'high'   => 'Élevé',
+                        default  => $state,
+                    })
                     ->colors([
                         'success' => 'low',
                         'warning' => 'medium',
-                        'danger' => 'high',
+                        'danger'  => 'high',
                     ])
                     ->label('Impact'),
                 TextEntry::make('status')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'identified' => 'Identifié',
+                        'mitigated'  => 'Atténué',
+                        'occurred'   => 'Survenu',
+                        'closed'     => 'Clôturé',
+                        default      => $state,
+                    })
                     ->colors([
-                        'gray' => 'identified',
-                        'success' => 'mitigated',
-                        'danger' => 'occurred',
+                        'gray'    => 'identified',
+                        'warning' => 'mitigated',
+                        'danger'  => 'occurred',
                         'success' => 'closed',
                     ])
                     ->label('Statut'),
@@ -141,18 +160,30 @@ class RisksRelationManager extends RelationManager
                     ->searchable(),
                 TextColumn::make('probability')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'low'    => 'Faible',
+                        'medium' => 'Moyenne',
+                        'high'   => 'Élevée',
+                        default  => $state,
+                    })
                     ->colors([
                         'success' => 'low',
                         'warning' => 'medium',
-                        'danger' => 'high',
+                        'danger'  => 'high',
                     ])
                     ->label('Probabilité'),
                 TextColumn::make('impact')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'low'    => 'Faible',
+                        'medium' => 'Moyen',
+                        'high'   => 'Élevé',
+                        default  => $state,
+                    })
                     ->colors([
                         'success' => 'low',
                         'warning' => 'medium',
-                        'danger' => 'high',
+                        'danger'  => 'high',
                     ])
                     ->label('Impact'),
                 TextColumn::make('risk_score')
@@ -171,10 +202,17 @@ class RisksRelationManager extends RelationManager
                     ->icon('heroicon-o-user'),
                 TextColumn::make('status')
                     ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'identified' => 'Identifié',
+                        'mitigated'  => 'Atténué',
+                        'occurred'   => 'Survenu',
+                        'closed'     => 'Clôturé',
+                        default      => $state,
+                    })
                     ->colors([
-                        'gray' => 'identified',
-                        'success' => 'mitigated',
-                        'danger' => 'occurred',
+                        'gray'    => 'identified',
+                        'warning' => 'mitigated',
+                        'danger'  => 'occurred',
                         'success' => 'closed',
                     ])
                     ->label('Statut'),

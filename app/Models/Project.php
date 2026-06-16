@@ -134,6 +134,22 @@ class Project extends Model
         return ($validatedDeliverables / $totalDeliverables) * 100;
     }
 
+    public function totalInvoiced(): float
+    {
+        return (float) $this->invoices->sum('amount');
+    }
+
+    public function totalPaid(): float
+    {
+        return (float) $this->invoices->sum('paid_amount');
+    }
+
+    public function recoveryRate(): float
+    {
+        $invoiced = $this->totalInvoiced();
+        return $invoiced > 0 ? ($this->totalPaid() / $invoiced) * 100 : 0;
+    }
+
     // Scopes
     public function scopeOngoing($query)
     {

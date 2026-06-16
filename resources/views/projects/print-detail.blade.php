@@ -57,7 +57,7 @@
         <div class="info-grid">
             <div class="info-item">
                 <label>Statut</label>
-                <span class="badge badge-info">{{ ucfirst($project->status) }}</span>
+                <span class="badge badge-info">{{ match($project->status) { 'preparation' => 'Préparation', 'ongoing' => 'En cours', 'suspended' => 'Suspendu', 'completed' => 'Terminé', 'cancelled' => 'Annulé', default => $project->status } }}</span>
             </div>
             <div class="info-item">
                 <label>Chef de Projet</label>
@@ -144,7 +144,7 @@
                     <td>{{ $deliv->actual_date?->format('d/m/Y') ?? '—' }}</td>
                     <td>
                         <span class="badge {{ $deliv->status === 'validated' ? 'badge-success' : ($deliv->planned_date?->isPast() ? 'badge-danger' : 'badge-warning') }}">
-                            {{ ucfirst($deliv->status) }}
+                            {{ match($deliv->status) { 'pending' => 'En attente', 'submitted' => 'Soumis', 'validated' => 'Validé', 'rejected' => 'Rejeté', default => $deliv->status } }}
                         </span>
                     </td>
                 </tr>

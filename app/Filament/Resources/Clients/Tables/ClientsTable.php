@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Clients\Tables;
 
+use App\Filament\Actions\ExportCsvAction;
 use App\Utils\Pays;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -72,17 +73,29 @@ class ClientsTable
                     ->label('Pays')
                     ->options(Pays::$LISTEPAYS)
                     ->searchable(),
-                TrashedFilter::make()->visible(Auth::user()->isSuperAdmin()),
+                TrashedFilter::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
             ])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
             ])
             ->toolbarActions([
+                ExportCsvAction::make()
+                    ->filename('clients.csv')
+                    ->columns([
+                        'Nom'          => fn($r) => $r->name ?? '',
+                        'Type'         => fn($r) => $r->type ?? '',
+                        'IFU'          => fn($r) => $r->ifu ?? '',
+                        'Email'        => fn($r) => $r->email ?? '',
+                        'Téléphone'    => fn($r) => $r->phone ?? '',
+                        'Ville'        => fn($r) => $r->city ?? '',
+                        'Pays'         => fn($r) => $r->country ?? '',
+                        'Contact'      => fn($r) => $r->contact_name ?? '',
+                    ]),
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
-                    RestoreBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
+                    ForceDeleteBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
+                    RestoreBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
                 ]),
             ]);
     }

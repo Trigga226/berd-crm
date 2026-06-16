@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Slimani\MediaManager\Concerns\InteractsWithMediaFiles;
 use App\Models\Client;
 use App\Models\Manifestation;
 use App\Models\TechnicalOffer;
@@ -13,10 +15,12 @@ use App\Models\User;
 
 class Offer extends Model
 {
+    use SoftDeletes;
     protected $fillable = [
         'title',
         'client_id',
         'manifestation_id',
+        'result',
         'submission_mode',
         'dp_path',
         'is_consortium',

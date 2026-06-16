@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\ProjectInvoice;
 use App\Observers\Concerns\LogsToSecureView;
+use Illuminate\Support\Facades\Cache;
 
 class ProjectInvoiceObserver
 {
@@ -12,6 +13,7 @@ class ProjectInvoiceObserver
     public function created(ProjectInvoice $projectInvoice): void
     {
         $projectInvoice->project?->updateCalculations();
+        Cache::increment('berd_stats_version');
 
         $this->logAction(
             "Création d'une facture de projet",
@@ -23,6 +25,7 @@ class ProjectInvoiceObserver
     public function updated(ProjectInvoice $projectInvoice): void
     {
         $projectInvoice->project?->updateCalculations();
+        Cache::increment('berd_stats_version');
 
         $this->logAction(
             "Modification d'une facture de projet",
@@ -34,6 +37,7 @@ class ProjectInvoiceObserver
     public function deleted(ProjectInvoice $projectInvoice): void
     {
         $projectInvoice->project?->updateCalculations();
+        Cache::increment('berd_stats_version');
 
         $this->logAction(
             "Suppression d'une facture de projet",

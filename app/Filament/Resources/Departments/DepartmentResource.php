@@ -25,6 +25,20 @@ class DepartmentResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-office';
 
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'description'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Description' => $record->description ? \Str::limit($record->description, 60) : '—',
+        ];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return DepartmentForm::configure($schema);

@@ -29,6 +29,21 @@ class UserResource extends Resource
     protected static ?string $label = 'Utilisateur';
     protected static ?string $pluralLabel = 'Utilisateurs';
 
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'email', 'num_poste', 'num_perso'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Email' => $record->email ?? '—',
+            'Poste' => $record->poste?->title ?? '—',
+        ];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return UserForm::configure($schema);

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Manifestations\Schemas;
 
+use App\Models\Expert;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -14,6 +15,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Hidden;
 use Filament\Schemas\Schema;
 use App\Utils\Pays;
+use Slimani\MediaManager\Form\MediaPicker;
 
 class ManifestationForm
 {
@@ -156,11 +158,59 @@ class ManifestationForm
                         Repeater::make('manifestationExperts')
                             ->relationship('manifestationExperts')
                             ->schema([
-                                Select::make('expert_id')
-                                    ->options(\App\Models\Expert::all()->mapWithKeys(fn($expert) => [$expert->id => $expert->first_name . ' ' . $expert->last_name]))
-                                    ->searchable()
-                                    ->required()
+                                        Select::make('expert_id')
                                     ->label('Expert')
+                                    ->required()
+                                    ->searchable()
+                                    ->live()
+                                    ->options(function (Get $get) {
+                                        $selectedDomains = $get('../../domains') ?? [];
+                                        $experts         = Expert::orderBy('last_name')->get();
+
+                                        $matched = [];
+                                        $others  = [];
+
+                                        foreach ($experts as $expert) {
+                                            $skills  = array_map('mb_strtolower', $expert->skills ?? []);
+                                            $name    = $expert->first_name . ' ' . $expert->last_name;
+                                            $isMatch = false;
+
+                                            foreach ($selectedDomains as $domain) {
+                                                $domainLower = mb_strtolower($domain);
+                                                foreach ($skills as $skill) {
+                                                    if (str_contains($skill, $domainLower) || str_contains($domainLower, $skill)) {
+                                                        $isMatch = true;
+                                                        break 2;
+                                                    }
+                                                }
+                                            }
+
+                                            if (!empty($selectedDomains) && $isMatch) {
+                                                $matched[$expert->id] = '⭐ ' . $name;
+                                            } else {
+                                                $others[$expert->id] = $name;
+                                            }
+                                        }
+
+                                        return $matched + $others;
+                                    })
+                                    ->helperText(function (Get $get) {
+                                        $domains = $get('../../domains') ?? [];
+                                        if (empty($domains)) {
+                                            return 'Renseignez les domaines pour voir les suggestions (⭐).';
+                                        }
+                                        $count = Expert::get()->filter(function ($e) use ($domains) {
+                                            $skills = array_map('mb_strtolower', $e->skills ?? []);
+                                            foreach ($domains as $d) {
+                                                $dl = mb_strtolower($d);
+                                                foreach ($skills as $s) {
+                                                    if (str_contains($s, $dl) || str_contains($dl, $s)) return true;
+                                                }
+                                            }
+                                            return false;
+                                        })->count();
+                                        return "{$count} expert(s) ⭐ correspondent aux domaines sélectionnés.";
+                                    })
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
 
                                 FileUpload::make('cv_path')
@@ -187,6 +237,32 @@ class ManifestationForm
                         self::makeDocTab('Références Techniques', 'reference', 'referenceDocuments'),
                         self::makeDocTab('Autres Documents', 'autre', 'autreDocuments'),
                     ])->columnSpanFull(),
+
+                Section::make('Médiathèque')
+                    ->description('Attachez des fichiers supplémentaires depuis la médiathèque.')
+                    ->icon('heroicon-o-photo')
+                    ->collapsible()
+                    ->schema([
+                        MediaPicker::make('mediaFiles')
+                            ->label('Fichiers joints')
+                            ->relationship('mediaFiles')
+                            ->multiple()
+                            ->directory(fn(Get $get) => 'Manifestations/' . ($get('avis_manifestation_id') ?? 'temp'))
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'application/msword',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                'application/vnd.ms-excel',
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                'application/vnd.ms-powerpoint',
+                                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                                'application/zip',
+                            ])
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 

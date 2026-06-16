@@ -16,6 +16,9 @@ class Expert extends Model
         'email',
         'phone',
         'cv_path',
+        'cv_paths',
+        'rating',
+        'won_manifestations_count',
         'years_of_experience',
         'skills',
         'formations',
@@ -24,10 +27,13 @@ class Expert extends Model
     ];
 
     protected $casts = [
-        'skills' => 'array',
-        'formations' => 'array',
-        'experiences' => 'array',
-        'years_of_experience' => 'integer',
+        'skills'                   => 'array',
+        'formations'               => 'array',
+        'experiences'              => 'array',
+        'cv_paths'                 => 'array',
+        'years_of_experience'      => 'integer',
+        'rating'                   => 'integer',
+        'won_manifestations_count' => 'integer',
     ];
 
     public function manifestations()

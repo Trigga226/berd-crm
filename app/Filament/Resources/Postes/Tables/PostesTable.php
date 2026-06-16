@@ -47,19 +47,19 @@ class PostesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                \Filament\Tables\Filters\TrashedFilter::make()->visible(Auth::user()->isSuperAdmin()),
+                \Filament\Tables\Filters\TrashedFilter::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
             ])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
-                RestoreAction::make()->visible(Auth::user()->isSuperAdmin()),
-                ForceDeleteAction::make()->visible(Auth::user()->isSuperAdmin()),
+                RestoreAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
+                ForceDeleteAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                    RestoreBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
-                    ForceDeleteBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
+                    RestoreBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
+                    ForceDeleteBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
                 ]),
             ]);
     }

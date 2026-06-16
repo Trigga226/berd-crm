@@ -15,7 +15,7 @@ class ProjectTimelineWidget extends Widget
 
     public ?int $projectId = null;
 
-    protected static ?int $sort = 11;
+    protected static ?int $sort = 15;
 
     protected int|string|array $columnSpan = 'full';
 

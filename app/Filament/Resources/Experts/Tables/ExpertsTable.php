@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Experts\Tables;
 
+use App\Filament\Actions\ExportCsvAction;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -49,7 +50,7 @@ class ExpertsTable
                     ->color('primary'),
             ])
             ->filters([
-                \Filament\Tables\Filters\TrashedFilter::make()->visible(Auth::user()->isSuperAdmin()),
+                \Filament\Tables\Filters\TrashedFilter::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -60,10 +61,23 @@ class ExpertsTable
                     ->url(fn($record) => asset('storage/' . $record->cv_path))
                     ->openUrlInNewTab(),
                 DeleteAction::make(),
-                ForceDeleteAction::make()->visible(Auth::user()->isSuperAdmin()),
-                RestoreAction::make()->visible(Auth::user()->isSuperAdmin()),
+                ForceDeleteAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
+                RestoreAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
             ])
             ->toolbarActions([
+                ExportCsvAction::make()
+                    ->filename('experts.csv')
+                    ->columns([
+                        'Nom'           => fn($r) => $r->last_name ?? '',
+                        'Prénom'        => fn($r) => $r->first_name ?? '',
+                        'Email'         => fn($r) => $r->email ?? '',
+                        'Téléphone'     => fn($r) => $r->phone ?? '',
+                        'Nationalité'   => fn($r) => $r->nationality ?? '',
+                        'Expérience'    => fn($r) => $r->years_of_experience ?? '',
+                        'Note'          => fn($r) => $r->rating ?? '',
+                        'Domaines'      => fn($r) => implode(', ', $r->skills ?? []),
+                        'Manifestations gagnées' => fn($r) => $r->won_manifestations_count ?? 0,
+                    ]),
                 BulkActionGroup::make([
                     BulkAction::make('analyze')
                         ->label('Analyser avec IA')
@@ -74,8 +88,8 @@ class ExpertsTable
                         })
                         ->deselectRecordsAfterCompletion(),
                     DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
-                    RestoreBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
+                    ForceDeleteBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
+                    RestoreBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
                 ]),
             ]);
     }

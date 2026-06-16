@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AdministrativeDocuments\Tables;
 
+use App\Filament\Actions\ExportCsvAction;
 use Filament\Actions\Action as ActionsAction;
 use Filament\Actions\BulkActionGroup as ActionsBulkActionGroup;
 use Filament\Actions\DeleteAction as ActionsDeleteAction;
@@ -67,7 +68,7 @@ class AdministrativeDocumentsTable
                 SelectFilter::make('category')
                     ->label('Catégorie')
                     ->options(\App\Models\AdministrativeDocument::getCategories()),
-                TrashedFilter::make()->native(false)->visible(Auth::user()->isSuperAdmin()),
+                TrashedFilter::make()->native(false)->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
             ])
             ->recordActions([
                 ActionsViewAction::make(),
@@ -78,14 +79,22 @@ class AdministrativeDocumentsTable
                     ->url(fn($record) => asset('storage/' . $record->file_path))
                     ->openUrlInNewTab(),
                 ActionsDeleteAction::make(),
-                ActionsForceDeleteAction::make()->visible(Auth::user()->isSuperAdmin()),
-                ActionsRestoreAction::make()->visible(Auth::user()->isSuperAdmin()),
+                ActionsForceDeleteAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
+                ActionsRestoreAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
             ])
             ->toolbarActions([
+                ExportCsvAction::make()
+                    ->filename('documents-administratifs.csv')
+                    ->columns([
+                        'Titre'      => fn($r) => $r->title ?? '',
+                        'Catégorie'  => fn($r) => $r->category ?? '',
+                        'Expire le'  => fn($r) => $r->expiration_date?->format('d/m/Y') ?? '',
+                        'Statut'     => fn($r) => $r->expiration_date && \Carbon\Carbon::parse($r->expiration_date)->isPast() ? 'Expiré' : 'Valide',
+                    ]),
                 ActionsBulkActionGroup::make([
                     ActionsDeleteBulkAction::make(),
-                    ActionsForceDeleteBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
-                    ActionsRestoreBulkAction::make()->visible(Auth::user()->isSuperAdmin()),
+                    ActionsForceDeleteBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
+                    ActionsRestoreBulkAction::make()->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com'),
                 ]),
             ]);
     }

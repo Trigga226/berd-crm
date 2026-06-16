@@ -26,6 +26,22 @@ class AvisManifestationResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-megaphone';
 
+    protected static ?string $recordTitleAttribute = 'title';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'reference_number', 'client_name', 'description'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Réf.'   => $record->reference_number ?? '—',
+            'Statut' => $record->status ?? '—',
+            'Score'  => $record->ai_score !== null ? $record->ai_score . '/10' : '—',
+        ];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return AvisManifestationForm::configure($schema);
@@ -44,7 +60,7 @@ class AvisManifestationResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\ManifestationsRelationManager::class,
         ];
     }
 

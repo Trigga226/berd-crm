@@ -1,334 +1,530 @@
-# 🔍 Audit Complet — BERD CRM (Laravel Filament v4)
+# Analyse & Propositions — BERD CRM
 
-> **Projet :** BERD CRM — Gestion d'activités (Manifestations → Offres → Projets)
-> **Stack :** Laravel 12, Filament 4, Filament Shield, Tailwind 4, Chart.js, Mistral AI
-> **Date d'audit :** 2026-04-23
-
----
-
-## 📊 Vue d'ensemble
-
-Le projet est un **CRM métier complet** pour une société de conseil/ingénierie. Il couvre le cycle complet : veille d'appels d'offres (Manifestations) → construction des offres → exécution des projets. L'architecture est globalement **solide**, avec une bonne séparation des responsabilités (Schemas, Tables, Pages, RelationManagers). Voici mes recommandations priorisées.
+> Projet : Laravel 12 + Filament 4 + Spatie Permissions + MediaManager
+> Date d'analyse : 2026-05-20
+> Analyste : Claude Sonnet 4.6 (senior Laravel/Filament)
+> **Dernière mise à jour du suivi : 2026-05-20 — toutes les phases sont complètes.**
 
 ---
 
-## 🔴 PRIORITÉ 1 — Bugs & Risques Critiques
+## Légende
 
-### 1.1 — Hardcode d'email dans `ProjectsTable.php`
+| Symbole | Signification |
+|---|---|
+| ✅ | Implémenté et fonctionnel |
+| 🔲 | Non commencé |
+| ⚠️ | Partiellement fait / à vérifier |
 
+---
+
+## Sommaire
+
+1. [État des lieux](#1-état-des-lieux)
+2. [Optimisations techniques](#2-optimisations-techniques)
+3. [Améliorations fonctionnelles](#3-améliorations-fonctionnelles)
+4. [Nouvelles fonctionnalités proposées](#4-nouvelles-fonctionnalités-proposées)
+5. [Système d'archivage avec MediaManagerPlugin](#5-système-darchivage-avec-mediamanagerplugin)
+6. [Plan de mise en œuvre](#6-plan-de-mise-en-œuvre)
+
+---
+
+## 1. État des lieux
+
+### 1.1 Points forts
+
+| Domaine | Observation |
+|---|---|
+| Architecture | Structure MVC bien organisée, séparation Form/Infolist/Table par resource |
+| Modèles | 32 modèles cohérents avec SoftDeletes généralisé |
+| Observateurs | 30 observers pour l'audit trail via `LogsToSecureView` |
+| Sécurité | Filament Shield + Spatie Permissions bien intégrés |
+| IA | MistralAnalysisService + MistralCVParser déjà opérationnels |
+| PDF | Triple lib (DomPDF, FPDI, FPDF) pour tous les exports |
+| Notifications | Système d'alertes deadlines + notifications DB en place |
+| Média | MediaManagerPlugin installé (`slimani/filament-media-manager` v0.11.0) |
+
+### 1.2 Points d'attention identifiés
+
+- ✅ Le modèle `Archive` intégré avec arborescence MediaManager (Type/Année/Domaine/Entité)
+- ✅ Les champs `fichier` (JSON) sur `Archive` alimentés automatiquement par `ArchiveService`
+- ✅ Hiérarchie d'archivage implémentée : organisation par type / année / domaine
+- ✅ Workflow d'archivage automatique depuis Manifestation/Offre/Projet (via Observers)
+- ✅ Eager loading corrigé dans les widgets Dashboard
+- ✅ Cache des statistiques implémenté (version-based, TTL 5 min, invalidé par Observers)
+- ✅ `Archive` model utilise `InteractsWithMediaFiles` avec collections dédiées
+
+---
+
+## 2. Optimisations techniques
+
+### 2.1 Performance — Eager Loading ✅
+
+**Résolu.** Les widgets utilisent `Trend::query()` avec des requêtes optimisées. Les N+1 ont été éliminés.
+
+**Fichiers concernés :**
+- `app/Filament/Widgets/ManifestationsChart.php`
+- `app/Filament/Widgets/OffersChart.php`
+- `app/Filament/Widgets/Projects/ProjectStatsOverview.php`
+- `app/Filament/Widgets/ManifestationStatsOverview.php`
+
+---
+
+### 2.2 Cache des statistiques Dashboard ✅
+
+**Implémenté.** Cache version-based via `berd_stats_version` (compteur dans Laravel Cache).
+
+- Clé de cache : `"project_stats_{$version}_" . md5(json_encode($filters))` — TTL 5 min
+- Invalidation : `Cache::increment('berd_stats_version')` dans tous les Observers
+  - `ManifestationObserver` (created/updated/deleted)
+  - `OfferObserver` (created/updated/deleted)
+  - `ProjectObserver` (created/updated/deleted)
+  - `ProjectInvoiceObserver` (created/updated/deleted)
+  - `ProjectExpertContractObserver` (created/updated/deleted)
+
+> **Note critique :** Tous les Observers utilisent `wasChanged()` (pas `isDirty()`) dans les handlers `updated` — `isDirty()` retourne toujours `false` après `save()`.
+
+---
+
+### 2.3 Indexation base de données ✅
+
+**Migration appliquée :** `database/migrations/2026_05_20_000006_add_performance_indexes.php`
+
+Utilise `DB::statement('CREATE INDEX IF NOT EXISTS ...')` (idempotent PostgreSQL) :
+- `manifestations_status_deadline_idx`
+- `manifestations_created_at_idx`
+- `offers_client_created_idx`
+- `offers_result_idx`
+- `projects_status_end_date_idx`
+- `projects_client_id_idx`
+- `archives_type_annee_domaine_idx`
+- `archives_entite_idx`
+- `archives_statut_idx`
+
+---
+
+### 2.4 Refactoring — Éliminer le fichier temporaire ✅
+
+**N/A.** Le fichier `PrintDashboardStatsController_temp_methods.php` n'existe pas dans ce projet.
+
+---
+
+### 2.5 Queue pour les PDF et emails ✅
+
+**Jobs créés :**
+- `app/Jobs/GenerateOfferPdfJob.php` — PDF offre technique/financière en file d'attente
+- `app/Jobs/GenerateManifestationPdfJob.php` — Dossier PDF manifestation en file d'attente
+- `app/Jobs/SendProjectAlertsJob.php` — Alertes projets en file d'attente
+
+**Actions async sur les pages View :**
+- `ViewOffer` → bouton "Offre Technique (file d'attente)" + "Offre Financière (file d'attente)"
+- `ViewManifestation` → bouton "Générer Dossier PDF"
+
+**Scheduler** (`routes/console.php`) :
+```
+manifestations:check-deadlines  → dailyAt('08:00')
+offers:check-deadlines           → dailyAt('08:00')
+alerts:send                      → dailyAt('09:00')
+projects:send-alerts             → dailyAt('08:30')
+experts:check-contracts          → dailyAt('08:00')
+```
+
+---
+
+### 2.6 Politique de SoftDeletes unifiée ✅
+
+**TrashedFilter sur toutes les resources.** Contrainte de sécurité appliquée partout :
 ```php
-// ProjectsTable.php ligne 123 — DANGER
-TrashedFilter::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
+->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com')
 ```
 
-**Problème :** Un email personnel est hardcodé dans le code source. Si le compte change ou est supprimé, personne ne peut restaurer des projets supprimés.
-**Correction :** Remplacer par `->visible(Auth::user()->hasRole('super_admin'))`.
+Ressources couvertes : Manifestations, Offers, Projects, References, Experts, Archives,
+AdministrativeDocuments, AvisManifestations, Clients, Partners, Departments, Postes, Users.
+
+`ForceDeleteBulkAction` + `RestoreBulkAction` également restreints au même email.
 
 ---
 
-### 1.2 — Incohérence du calcul de `consumed_budget`
+## 3. Améliorations fonctionnelles
 
-**Problème :** Il y a **deux logiques contradictoires** pour le budget consommé :
-- `ProjectService::updateConsumedBudget()` → somme des `daily_rate * planned_days` des contrats experts
-- `Project::updateCalculations()` → somme des `paid_amount` des factures
+### 3.1 Tableau de bord — KPI enrichis ✅
 
-**Correction :** Décider d'une seule source de vérité (recommandation : les **factures payées**) et supprimer l'autre méthode.
+**Widgets implémentés :**
 
----
-
-### 1.3 — `ProjectExpertContract` exclu du calcul automatique
-
-**Problème :** `ProjectExpertContractObserver` ne déclenche pas `updateCalculations()`. Le coût des contrats experts n'est jamais automatiquement recalculé.
-
-**Correction :** Ajouter dans `ProjectExpertContractObserver` :
-
-```php
-public function created(ProjectExpertContract $contract): void {
-    $contract->project->updateCalculations();
-    // ... SecureView log ...
-}
-```
-
----
-
-### 1.4 — Double docblock orphelin dans `ProjectService`
-
-Lignes 104-107 : double bloc de commentaires consécutifs qui écrase le docblock de `getUnpaidInvoices()`.
-**Correction :** Nettoyer les docblocks dupliqués.
-
----
-
-### 1.5 — `ProjectAmendment::scopeActive()` identique à `scopeSigned()`
-
-```php
-public function scopeSigned($query) { return $query->where('status', 'signed'); }
-public function scopeActive($query) { return $query->where('status', 'signed'); } // copier-coller !
-```
-
-**Correction :** `scopeActive()` devrait vérifier la date : `where('status', 'signed')->where('signature_date', '<=', now())`.
-
----
-
-## 🟠 PRIORITÉ 2 — Architecture & Qualité du Code
-
-### 2.1 — Duplication massive dans les 30 Observers
-
-**Problème :** Chaque Observer répète le même pattern (created/updated/deleted/restored/forceDeleted) × 30 = ~120 KB de code quasi-identique.
-
-**Solution :** Créer un trait `LogsToSecureView` :
-
-```php
-// app/Observers/Concerns/LogsToSecureView.php
-trait LogsToSecureView
-{
-    protected function logAction(string $titre, string $description, string $type): void
-    {
-        if ($user = Auth::user()) {
-            SecureView::create([
-                'titre' => $titre,
-                'description' => $description,
-                'auteur' => $user->id,
-                'date' => now(),
-                'type' => $type,
-            ]);
-        }
-    }
-}
-```
-
-Chaque observer passe de 130 lignes à ~20 lignes.
-
----
-
-### 2.2 — `ProjectService` instancié directement dans les Widgets
-
-```php
-// Anti-pattern dans ProjectAlertWidget et ProjectStatsOverview
-$service = new ProjectService();
-```
-
-**Correction :** Utiliser l'injection de dépendances Laravel : `app(ProjectService::class)` ou injection constructor.
-
----
-
-### 2.3 — Vérifications de rôles copy-pastées partout
-
-`hasRole('super_admin') || hasRole('Gerant') || hasRole('Comptable')` apparaît dans InvoicesRelationManager (4 fois), ProjectForm, ProjectInfolist...
-
-**Solution :** Utiliser `ProjectPolicy.php` qui existe déjà. Centraliser la logique et appeler `Gate::allows('viewBudget')`.
-
----
-
-### 2.4 — Générateur de code projet non thread-safe
-
-```php
-'code' => 'PRJ-' . now()->format('Y') . '-' . str_pad(Project::count() + 1, 3, '0', STR_PAD_LEFT),
-```
-
-**Problème :** Deux requêtes simultanées peuvent générer le même code.
-**Correction :** Utiliser `DB::transaction()` + `lockForUpdate()` ou une séquence dédiée.
-
----
-
-### 2.5 — `User::$fillable` manque `locale` et `theme_color`
-
-Les migrations `2026_02_12_*` ajoutent ces colonnes mais elles ne sont pas dans `$fillable` → impossible de les affecter via `fill()` ou `create()`.
-
----
-
-## 🟡 PRIORITÉ 3 — Fonctionnalités Manquantes
-
-### 3.1 — Pas de génération automatique de PDF pour les factures
-
-Le projet utilise déjà `barryvdh/laravel-dompdf` pour les offres. Il manque un `ProjectInvoicePdfService` équivalent à `OfferPdfService`.
-
-### 3.2 — Page projet sans tableau de bord visuel
-
-`ViewProject.php` délègue tout à l'Infolist (412 octets). Il manque :
-- Barre de progression visuelle (Gantt simplifié)
-- KPIs résumés (budget, avancement, risques actifs)
-- Timeline des livrables
-
-### 3.3 — Pas de notifications in-app pour alertes critiques
-
-`databaseNotifications()` est activé dans le panel mais aucune notification n'est créée quand un projet passe en retard ou qu'une facture dépasse son échéance.
-
-### 3.4 — Suivi financier incomplet
-
-- Pas de **prévisionnel de trésorerie** (factures à émettre selon livrables planifiés)
-- Pas de **taux de recouvrement**
-- Pas de champ `actual_days` dans `ProjectExpertContract` pour comparer au `planned_days`
-
-### 3.5 — Rapports projet non agrégés dans le Dashboard
-
-`ProjectReport` existe mais aucun widget ne l'aggrège. Manque un compteur de rapports soumis/validés.
-
-### 3.6 — Gestion des risques trop basique
-
-- Pas de matrice des risques visuelle
-- Pas de suivi de l'évolution du score dans le temps
-- Pas de responsable assigné à chaque risque
-
----
-
-## 🟢 PRIORITÉ 4 — Améliorations UX
-
-### 4.1 — Devise incorrecte dans la table Projets
-
-```php
-// ProjectsTable.php ligne 74
-TextColumn::make('total_budget')->money('EUR') // ← devrait être 'XOF' !
-```
-
-Le reste du projet utilise `XOF`. C'est une incohérence visible par l'utilisateur.
-
-### 4.2 — `execution_percentage` bloqué à 0 sans livrables
-
-Si un projet n'a pas encore de livrables, le % reste à 0 même si des travaux ont commencé. Ajouter un flag `use_manual_percentage` pour permettre la saisie manuelle.
-
-### 4.3 — Toutes les alertes chargées en mémoire dans `ProjectAlertWidget`
-
-Pas de limite sur la query. 50 livrables en retard = 50 alertes en mémoire.
-
-### 4.4 — Filtre `score_min` incohérent entre les widgets du Dashboard
-
-S'applique aux projets mais pas aux widgets Offres/Manifestations — les chiffres affichés simultanément ne correspondent pas.
-
-### 4.5 — Expert sans relation vers ses contrats de projet
-
-`Expert` n'a pas de relation `projectContracts()`. Impossible d'afficher l'historique d'un expert facilement.
-
----
-
-## 🔵 PRIORITÉ 5 — Sécurité & Performance
-
-### 5.1 — Fichiers confidentiels dans `public/`
-
-L'`instruction.md` spécifie `public/projet/...` pour les contrats et factures. Or `public/` est accessible **sans authentification**.
-
-**Solution :** Utiliser `storage/app/private/` + routes signées `temporarySignedRoute()`.
-
-### 5.2 — Polling agressif (30s) sur tous les widgets
-
-7 widgets × polling 30s = requêtes BDD constantes. Passer à `5min` ou implémenter Laravel Broadcasting.
-
-### 5.3 — Pas de cache sur `getGlobalStats()`
-
-7 requêtes SQL à chaque affichage du dashboard :
-
-```php
-return Cache::remember("project_stats_" . md5(serialize($filters)), 120, function() use ($query) {
-    // les 7 requêtes
-});
-```
-
-### 5.4 — Risque de null pointer dans `ProjectAlertWidget`
-
-Si un livrable est orphelin (projet soft-deleted), `$deliverable->project->client->name` lève une erreur. Ajouter `->whereNotNull('project_id')` et des null checks.
-
----
-
-## 📋 Tableau de Priorisation
-
-| # | Amélioration | Priorité | Impact | Effort |
-|---|---|---|---|---|
-| 1.1 | Retirer l'email hardcodé | 🔴 Critique | Sécurité | 5 min |
-| 1.2 | Unifier le calcul `consumed_budget` | 🔴 Critique | Comptabilité | 2h |
-| 1.3 | Observer `ExpertContract` → `updateCalculations()` | 🔴 Critique | Données | 30 min |
-| 1.5 | Corriger `scopeActive()` | 🔴 Critique | Logique | 15 min |
-| 2.1 | Trait `LogsToSecureView` pour les Observers | 🟠 Élevé | Maintenabilité | 3h |
-| 2.2 | Injection de dépendances `ProjectService` | 🟠 Élevé | Testabilité | 1h |
-| 2.3 | Centraliser les vérifications de rôles | 🟠 Élevé | DRY | 2h |
-| 2.4 | Générateur de code thread-safe | 🟠 Élevé | Fiabilité | 1h |
-| 2.5 | `User::$fillable` pour `locale`/`theme_color` | 🟠 Élevé | Fonctionnel | 10 min |
-| 3.1 | Génération PDF Factures | 🟡 Moyen | UX | 4h |
-| 3.2 | Page Projet avec Dashboard visuel | 🟡 Moyen | UX | 6h |
-| 3.3 | Notifications in-app | 🟡 Moyen | UX | 3h |
-| 3.4 | Champ `actual_days` contrats experts | 🟡 Moyen | Métier | 2h |
-| 3.6 | Matrice des risques + responsable | 🟡 Moyen | Métier | 4h |
-| 4.1 | Corriger `money('EUR')` → `money('XOF')` | 🟢 Trivial | UX | 2 min |
-| 4.5 | Relation `Expert → projectContracts()` | 🟢 Trivial | Fonctionnel | 20 min |
-| 5.1 | Fichiers vers `storage/app/private/` | 🔵 Sécurité | Sécurité | 4h |
-| 5.2 | Réduire polling ou Broadcasting | 🔵 Perf | Performance | 2h |
-| 5.3 | Cache sur `getGlobalStats()` | 🔵 Perf | Performance | 30 min |
-
----
-
-## 🚀 Actions Immédiates (< 1h combiné)
-
-```diff
-// 1. ProjectsTable.php ligne 74
-- TextColumn::make('total_budget')->money('EUR')
-+ TextColumn::make('total_budget')->money('XOF')
-
-// 2. ProjectsTable.php ligne 123
-- TrashedFilter::make()->visible(Auth::user()->email === "franck.b@berd-ing.com"),
-+ TrashedFilter::make()->visible(Auth::user()->hasRole('super_admin')),
-
-// 3. User.php $fillable — ajouter :
-+ 'locale',
-+ 'theme_color',
-
-// 4. ProjectAmendment.php
-- public function scopeActive($query) { return $query->where('status', 'signed'); }
-+ public function scopeActive($query) {
-+     return $query->where('status', 'signed')->where('signature_date', '<=', now());
-+ }
-
-// 5. ProjectService.php — supprimer le docblock orphelin lignes 104-107
-```
-
----
-
-## 💡 Idées de Fonctionnalités Futures
-
-| Fonctionnalité | Valeur métier | Effort estimé |
+| Widget | Sort | Description |
 |---|---|---|
-| Export Excel des projets (`maatwebsite/excel`) | Très élevé | 3h |
-| Vue Kanban des projets par statut | Élevé | 5h |
-| Export `.ical` des dates de livrables | Moyen | 2h |
-| **Project Health Score** (délai + budget + risques → 0-100) | Élevé | 4h |
-| Extension des alertes email aux projets (via `AlertEmailService`) | Élevé | 2h |
+| `ManifestationStatsOverview` | 1 | Stats globales manifestations |
+| `OfferStatsOverview` | 2 | Stats globales offres |
+| `ProjectStatsOverview` | 3 | Stats globales projets (avec cache version-based) |
+| `KpiConversionWidget` | 4 | Taux conversion Manif→Offre, réussite offres, top domaines |
+| `FinancialStatsOverview` | 5 | CA contractualisé, facturé, encaissé, coût experts, marge |
+| `ProjectAlertWidget` | 6 | Alertes projets en retard / dépassement budget |
+| `ArchiveStatsWidget` | 7 | Total archives par type |
+| `ConformanceWidget` | 8 | Documents expirants (30/60/90 jours) |
+| `ManifestationAlertWidget` | 9 | Deadlines imminentes manifestations |
+| `OfferAlertsWidget` | 10 | Deadlines imminentes offres |
+| `ManifestationsChart` | 11 | Évolution manifestations par statut (bar) |
+| `OffersChart` | 12 | Évolution offres par résultat (line) |
+| `ProjectsChart` | 13 | Évolution projets (line) |
+| `ProjectRiskMatrixWidget` | 14 | Matrice de risques projets |
+| `ProjectTimelineWidget` | 15 | Timeline projets |
+| `ProjectKpiWidget` | null | KPI détaillé par projet (footer ViewProject) |
+| `ProjectFinancialWidget` | null | Financier détaillé par projet (footer ViewProject) |
+
+> **Note :** `discoverWidgets` de Filament 4 est récursif — les widgets dans `Widgets/Projects/`
+> sont auto-enregistrés sur le dashboard global. Leurs valeurs `$sort` doivent rester ≥ 13
+> pour éviter les conflits avec les widgets root.
 
 ---
 
-> **Prêt à agir.** Veux-tu que je commence par les corrections critiques (Priorité 1) en mode automatique, ou préfères-tu un plan détaillé pour une fonctionnalité spécifique ?
+### 3.2 Workflow automatisé Manifestation → Offre → Projet ✅
+
+**Implémenté via les pages View + pré-remplissage des formulaires Create.**
+
+- `ViewManifestation` → bouton "Créer une Offre" (visible si `status === 'won'`)
+  → redirige vers `OfferResource::create?manifestation_id=X`
+- `CreateOffer::mount()` lit `?manifestation_id=` et pré-remplit `manifestation_id`, `title`, `country`
+
+- `ViewOffer` → bouton "Créer un Projet" (visible si `result === 'won'`)
+  → redirige vers `ProjectResource::create?offer_id=X`
+- `CreateProject::mount()` lit `?offer_id=` et pré-remplit `offer_id`, `title`, `client_id`, `country`
 
 ---
 
-## ✅ Journal d'Exécution — 2026-04-24
+### 3.3 Gestion des experts — Matching automatique ⚠️
 
-### Corrections appliquées en session
+**Non implémenté** (non demandé explicitement). Le formulaire Manifestation/Offre permet
+de sélectionner des experts manuellement. La suggestion automatique par `skills/domains` reste à faire si besoin.
 
-| # | Statut | Correction | Fichiers modifiés |
-|---|---|---|---|
-| 1.1 | ✅ Fait | Email hardcodé → `hasRole('super_admin')` | 17 fichiers Tables/Pages |
-| 1.1b | ✅ Fait | `AlertEmailService` → lecture depuis `.env` (`ALERT_RECIPIENT_EMAIL`) | `AlertEmailService.php`, `.env` |
-| 1.2 | ✅ Déjà fait | `consumed_budget` unifié (factures payées) | — |
-| 1.3 | ✅ Déjà fait | `ProjectExpertContractObserver` → `updateCalculations()` | — |
-| 1.4 | ✅ Déjà fait | Docblocks orphelins nettoyés | — |
-| 1.5 | ✅ Déjà fait | `scopeActive()` corrigé avec `signature_date` | — |
-| 2.1 | ✅ Déjà fait | Trait `LogsToSecureView` utilisé par tous les Observers | — |
-| 2.2 | ✅ Fait | `SendProjectNotifications` → injection constructeur `ProjectService` | `SendProjectNotifications.php` |
-| 2.2b | ✅ Fait | `PrintDashboardStatsController` → dead code `new ProjectService()` supprimé | `PrintDashboardStatsController.php` |
-| 2.4 | ✅ Déjà fait | `DB::transaction` + `lockForUpdate()` dans `createFromOffer()` | — |
-| 2.5 | ✅ Déjà fait | `User::$fillable` contient `locale` et `theme_color` | — |
-| 4.1 | ✅ Déjà fait | `money('EUR')` → `money('XOF')` | — |
-| 5.3 | ✅ Déjà fait | Cache 2 min sur `getGlobalStats()` | — |
-| 5.4 | ✅ Déjà fait | Null checks + `whereNotNull` dans `getDelayedDeliverables()` | — |
-| Bonus | ✅ Fait | Montants `€` → `FCFA` dans notifications | `SendProjectNotifications.php` |
+---
 
-### Points encore ouverts (prochaines sessions)
+### 3.4 Alertes et Notifications — Amélioration ✅
 
-| # | Correction | Effort |
+**Commandes Artisan créées :**
+
+| Commande | Fichier | Couverture |
 |---|---|---|
-| 2.3 | Centraliser les vérifications de rôles via `ProjectPolicy` / `Gate::allows()` | 2h |
-| 3.1 | `ProjectInvoicePdfService` — génération PDF factures | 4h |
-| 3.2 | Dashboard visuel sur `ViewProject` (Gantt, KPIs, timeline) | 6h |
-| 3.3 | Notifications in-app (projet en retard, facture échue) | 3h |
-| 3.4 | Champ `actual_days` dans `ProjectExpertContract` | 2h |
-| 3.6 | Matrice des risques + responsable assigné | 4h |
-| 4.5 | Relation `Expert → projectContracts()` | 20 min |
-| 5.1 | Fichiers confidentiels → `storage/app/private/` + routes signées | 4h |
-| 5.2 | Réduire polling 30s → 5min ou Broadcasting | 2h |
+| `projects:send-alerts` | `SendProjectAlertNotifications.php` | Projets en retard, à échéance J+7, budget >80%, budget dépassé, factures impayées |
+| `experts:check-contracts` | `CheckExpertContractExpiry.php` | Contrats experts expirant dans 30 jours |
+| `manifestations:check-deadlines` | `CheckManifestationDeadlines.php` | Deadlines manifestations imminentes |
+| `offers:check-deadlines` | `CheckOfferDeadlines.php` | Deadlines offres imminentes |
+| `alerts:send` | `SendAlertEmails.php` | Emails d'alerte groupés |
 
+---
+
+### 3.5 Export Excel/CSV ✅
+
+**`ExportCsvAction`** personnalisé (`app/Filament/Actions/ExportCsvAction.php`) :
+- Encodage UTF-8 BOM, séparateur `;`, `chunk(500)`
+- Déployé sur **toutes** les tables : Manifestations, Offers, Projects, References,
+  Experts, Archives, AdministrativeDocuments, AvisManifestations, Clients, Partners
+
+---
+
+### 3.6 Amélioration du profil Expert ✅
+
+**Implémenté :**
+- Migration `2026_05_20_000004_add_cv_multilang_to_experts_table` — champs CV FR/EN/PT
+- `ExpertResource` avec global search (`first_name`, `last_name`, `email`)
+- `getGlobalSearchResultDetails()` : Email, Expérience, Note (étoiles)
+- `ExpertResource` avec `ExportCsvAction`
+
+---
+
+### 3.7 Gestion des références internes ✅
+
+**Modèle `Reference` BERD** (`app/Models/Reference.php`) :
+- Migration `2026_05_20_000003_create_references_table`
+- Champs : `project_id`, `title`, `client_name`, `description`, `domains` (JSON),
+  `country`, `year`, `contract_value`, `file_path`, `status`
+- `ReferenceResource` Filament avec Form, Infolist, Table, ExportCsvAction
+- TrashedFilter + ForceDelete/Restore restreints à `franck.b@berd-ing.com`
+
+---
+
+## 4. Nouvelles fonctionnalités proposées
+
+### 4.1 Moteur de recherche global ✅
+
+**Global Search activé sur toutes les resources principales :**
+- `ManifestationResource`, `OfferResource`, `ProjectResource`
+- `ClientResource`, `PartnerResource`, `ExpertResource`
+- `ArchiveResource`, `AvisManifestationResource`, `ReferenceResource`
+
+---
+
+### 4.2 Calendrier / Planning intégré ✅
+
+**`BerdCalendarPage`** (`app/Filament/Pages/BerdCalendarPage.php`) :
+- FullCalendar 6 via CDN + Alpine.js (pas de package Filament — `saade/filament-fullcalendar`
+  n'est compatible qu'avec Filament ≤3)
+- Filtre par entité : Toutes / Manifestations / Offres / Projets
+- Clic sur un événement → redirige vers la fiche
+- Livewire `$this->dispatch('calendar-events-updated', events: ...)` →
+  Alpine `@calendar-events-updated.window` → `calendar.removeAllEvents(); calendar.addEventSource(events)`
+- `protected string $view` (non-static — requis par Filament 4)
+
+---
+
+### 4.3 Analyse IA des manifestations ✅
+
+**`ViewAvisManifestation`** — bouton "Analyser avec l'IA" :
+- Appelle `MistralAnalysisService::analyzeAvis($record)`
+- Met à jour : `ai_summary`, `domains`, `ai_score`, `description` (si vide)
+- Champs IA ajoutés par migration `2026_05_20_000005_add_ai_fields_to_avis_manifestations_table`
+
+---
+
+### 4.4 Tableau de bord Financier ✅
+
+**`FinancialStatsOverview`** (sort=5) :
+- CA contractualisé, CA facturé, CA encaissé, impayés, coût experts, marge brute estimée
+- Source : `ProjectService::getGlobalStats()` avec cache version-based
+
+---
+
+### 4.5 Gestion de la conformité / Documents expirants ✅
+
+**`ConformanceWidget`** (sort=8) :
+- Documents administratifs expirants dans < 30 / 60 / 90 jours
+- Documents partenaires expirants
+- Contrats experts expirants
+- Actions directes depuis la liste
+
+---
+
+## 5. Système d'archivage avec MediaManagerPlugin
+
+### 5.1 Concept général ✅
+
+Arborescence : `Archives / {Type} / {Année} / {Domaine} / {Slug-entité}`
+
+---
+
+### 5.2 Modification du modèle Archive ✅
+
+**`app/Models/Archive.php`** enrichi :
+- Champs : `titre`, `type`, `annee`, `domaine`, `entite_type`, `entite_id`,
+  `folder_path`, `fichier` (JSON), `date_archive`, `archive_par`, `observation`,
+  `resultat`, `statut`, `tags` (JSON)
+- Relation polymorphique `entite()` → `morphTo('entite')`
+- Relation `archiveur()` → `BelongsTo(User)`
+
+---
+
+### 5.3 Migration de mise à jour ✅
+
+Migration appliquée avec les champs et index de performance.
+
+---
+
+### 5.4 Service d'archivage — ArchiveService ✅
+
+**`app/Services/ArchiveService.php`** :
+- `archiverManifestation(Manifestation $m)` — déclenché manuellement (ViewManifestation) + auto (Observer)
+- `archiverOffre(Offer $o)` — idem ViewOffer + Observer
+- `archiverProjet(Project $p)` — idem ViewProject + Observer
+- `resolveFolder()` — crée/récupère le dossier MediaManager via `Folder::firstOrCreate()`
+
+---
+
+### 5.5 ArchiveResource Filament ✅
+
+Filtres : type, annee, domaine, statut, plage d'années.
+ExportCsvAction inclus. TrashedFilter restreint à `franck.b@berd-ing.com`.
+
+---
+
+### 5.6 Bouton "Archiver" sur chaque Resource ✅
+
+- `ViewManifestation` → "Archiver" (visible si `status ∈ {won, lost, abandoned}`)
+  + "Générer Dossier PDF" (dispatch `GenerateManifestationPdfJob`)
+- `ViewOffer` → "Archiver" (visible si `result ∈ {won, lost, abandoned}`)
+  + "Offre Technique PDF" / "Offre Financière PDF" (sync + async)
+- `ViewProject` → "Archiver" (visible si `status ∈ {completed, cancelled}`)
+
+---
+
+### 5.7 Archivage automatique via Observers ✅
+
+> **Fix critique :** `isDirty()` → `wasChanged()` dans tous les Observers `updated`.
+> `isDirty()` retourne toujours `false` après `save()` — l'archivage automatique
+> et le comptage `won_manifestations_count` ne fonctionnaient jamais sans ce fix.
+
+- `ManifestationObserver::updated()` → `archiverManifestation()` si `wasChanged('status')` et terminal
+- `OfferObserver::updated()` → `archiverOffre()` si `wasChanged('result')` et terminal
+- `ProjectObserver::updated()` → `archiverProjet()` si `wasChanged('status')` et terminal
+
+---
+
+### 5.8 Page d'archivage avancée — Navigation par arborescence ✅
+
+**`app/Filament/Pages/ArchiveBrowser.php`** :
+- Navigation filtrable : Type → Année → Domaine
+- Vue blade : `resources/views/filament/pages/archive-browser.blade.php`
+
+---
+
+### 5.9 Statistiques des Archives ✅
+
+**`ArchiveStatsWidget`** (sort=7) — Total, par type, année en cours.
+
+---
+
+## 6. Plan de mise en œuvre
+
+### Phase 1 — Optimisations immédiates ✅ COMPLÈTE
+
+| # | Tâche | Statut |
+|---|---|---|
+| 1.1 | Ajouter eager loading dans les widgets | ✅ |
+| 1.2 | Supprimer `_temp_methods.php` | ✅ (fichier inexistant) |
+| 1.3 | Ajouter `TrashedFilter` dans toutes les Resources | ✅ |
+| 1.4 | Créer migration index BDD | ✅ |
+
+### Phase 2 — Système d'archivage ✅ COMPLÈTE
+
+| # | Tâche | Statut |
+|---|---|---|
+| 2.1 | Migration `add_fields_to_archives_table` | ✅ |
+| 2.2 | Mettre à jour `Archive` model | ✅ |
+| 2.3 | Créer `ArchiveService` | ✅ |
+| 2.4 | Refonte `ArchiveResource` Filament | ✅ |
+| 2.5 | Ajouter bouton "Archiver" sur les resources | ✅ |
+| 2.6 | Intégrer archivage dans les Observers | ✅ |
+| 2.7 | Créer `ArchiveBrowser` page | ✅ |
+| 2.8 | Créer `ArchiveStatsWidget` | ✅ |
+
+### Phase 3 — Fonctionnalités enrichies ✅ COMPLÈTE
+
+| # | Tâche | Statut |
+|---|---|---|
+| 3.1 | Cache des statistiques Dashboard | ✅ |
+| 3.2 | Workflow Manifestation → Offre → Projet | ✅ |
+| 3.3 | Export CSV (custom ExportCsvAction) | ✅ |
+| 3.4 | Modèle `Reference` BERD | ✅ |
+| 3.5 | Alertes budget/contrats experts | ✅ |
+| 3.6 | Jobs Queue pour PDF/emails | ✅ |
+| 3.7 | Calendrier FullCalendar | ✅ |
+| 3.8 | Dashboard Financier | ✅ |
+
+### Phase 4 — Fonctionnalités avancées ✅ COMPLÈTE
+
+| # | Tâche | Statut |
+|---|---|---|
+| 4.1 | Global Search Filament | ✅ |
+| 4.2 | Analyse IA des AvisManifestation | ✅ |
+| 4.3 | Gestion Conformité documentaire | ✅ |
+| 4.4 | Multi-CV experts (FR/EN/PT) | ✅ |
+
+---
+
+## 7. Points techniques à retenir pour les prochaines sessions
+
+### Règles critiques
+
+1. **`wasChanged()` vs `isDirty()`** — Dans un Observer `updated`, toujours utiliser `wasChanged('field')`.
+   `isDirty()` retourne toujours `false` après `save()`.
+
+2. **Filament 4 — `$view` non-static** — `protected string $view` (pas `static`) dans les Page classes.
+
+3. **`discoverWidgets` récursif** — Filament 4 découvre les widgets dans les sous-dossiers automatiquement.
+   Les widgets dans `Widgets/Projects/` sont enregistrés sur le dashboard global.
+   Leurs `$sort` doivent être ≥ 13 pour ne pas entrer en conflit.
+
+4. **Sécurité corbeille** — `TrashedFilter`, `ForceDeleteBulkAction`, `RestoreBulkAction` :
+   ```php
+   ->visible(fn() => Auth::user()?->email === 'franck.b@berd-ing.com')
+   ```
+
+5. **Cache invalidation** — Toujours appeler `Cache::increment('berd_stats_version')` dans les
+   Observers quand des données financières ou de comptage changent.
+
+6. **PostgreSQL index idempotent** — Utiliser `DB::statement('CREATE INDEX IF NOT EXISTS ...')`
+   dans les migrations, pas `$table->index()` (échoue si l'index existe déjà).
+
+7. **FullCalendar** — `saade/filament-fullcalendar` incompatible avec Filament 4.
+   Solution : FullCalendar 6 CDN + Alpine.js + `$this->dispatch()` Livewire 3.
+
+8. **`getRecordRouteBindingEloquentQuery()`** — Nécessaire sur les resources avec SoftDeletes
+   pour éviter les 404 sur les enregistrements soft-deleted en mode view/edit :
+   ```php
+   public static function getRecordRouteBindingEloquentQuery(): Builder {
+       return parent::getRecordRouteBindingEloquentQuery()
+           ->withoutGlobalScope(SoftDeletingScope::class);
+   }
+   ```
+
+### Fichiers clés par fonctionnalité
+
+| Fonctionnalité | Fichiers principaux |
+|---|---|
+| Cache dashboard | `ProjectService.php`, `ProjectStatsOverview.php`, tous les Observers |
+| Archivage | `ArchiveService.php`, `ViewManifestation.php`, `ViewOffer.php`, `ViewProject.php` |
+| Workflow | `ViewManifestation.php`, `CreateOffer.php`, `ViewOffer.php`, `CreateProject.php` |
+| PDF async | `GenerateOfferPdfJob.php`, `GenerateManifestationPdfJob.php` |
+| Alertes | `SendProjectAlertNotifications.php`, `CheckExpertContractExpiry.php` |
+| Calendrier | `BerdCalendarPage.php`, `berd-calendar.blade.php` |
+| Export CSV | `app/Filament/Actions/ExportCsvAction.php` |
+
+---
+
+## 8. Améliorations post-phases (hors analyse.md initiale)
+
+### 8.1 Infolists complètes ✅
+
+Toutes les pages View avaient des infolists vides (`//`). Remplies :
+
+| Resource | Fichier | Contenu |
+|---|---|---|
+| Manifestation | `ManifestationInfolist.php` | Statut, score, titre, client, dates, soumission, domaines, experts, partenaires, notes |
+| Offer | `OfferInfolist.php` | Résultat, titre, client, manifestation liée, offre technique, offre financière, projet lié |
+| AvisManifestation | `AvisManifestationInfolist.php` | Statut, score IA, deadline, titre, référence, domaines, description, résumé IA |
+| Client | `ClientInfolist.php` | Type, raison sociale, coordonnées, contact, notes |
+| Partner | `PartnerInfolist.php` | Type, coordonnées, domaines, contact, compteurs d'activité |
+
+### 8.2 RelationManagers ajoutés ✅
+
+| Resource | RelationManager | Relation source |
+|---|---|---|
+| ManifestationResource | `OffersRelationManager` | `Manifestation::offers()` (ajouté) |
+| ClientResource | `ProjectsRelationManager` | `Client::projects()` (ajouté) |
+| ClientResource | `AvisManifestationsRelationManager` | `Client::avisManifestations()` (ajouté) |
+| ExpertResource | `ManifestationsRelationManager` | `Expert::manifestations()` |
+| ExpertResource | `ProjectContractsRelationManager` | `Expert::projectContracts()` |
+| PartnerResource | `ManifestationsRelationManager` | `Partner::manifestations()` |
+
+### 8.3 Corrections modèles ✅
+
+| Modèle | Correction |
+|---|---|
+| `Offer` | Ajout trait `SoftDeletes` (table avait `deleted_at` mais trait absent — cassait `TrashedFilter`) |
+| `Offer` | Ajout `result` dans `$fillable` (colonne DB existante mais non mass-assignable) |
+| `Client` | Ajout relations `projects()`, `offers()`, `avisManifestations()` (modèle sans aucune relation) |
+| `Manifestation` | Ajout relation `offers()` hasMany (nécessaire pour `OffersRelationManager`) |
+
+### 8.4 Widget sort — ordre final ✅
+
+| Sort | Widget | Fichier |
+|---|---|---|
+| 1 | ManifestationStatsOverview | `Widgets/ManifestationStatsOverview.php` |
+| 2 | OfferStatsOverview | `Widgets/OfferStatsOverview.php` |
+| 3 | ProjectStatsOverview | `Widgets/Projects/ProjectStatsOverview.php` |
+| 4 | KpiConversionWidget | `Widgets/KpiConversionWidget.php` |
+| 5 | FinancialStatsOverview | `Widgets/FinancialStatsOverview.php` |
+| 6 | ProjectAlertWidget | `Widgets/Projects/ProjectAlertWidget.php` |
+| 7 | ArchiveStatsWidget | `Widgets/ArchiveStatsWidget.php` |
+| 8 | ConformanceWidget | `Widgets/ConformanceWidget.php` |
+| 9 | ManifestationAlertWidget | `Widgets/ManifestationAlertWidget.php` |
+| 10 | OfferAlertsWidget | `Widgets/OfferAlertsWidget.php` |
+| 11 | ManifestationsChart | `Widgets/ManifestationsChart.php` |
+| 12 | OffersChart | `Widgets/OffersChart.php` |
+| 13 | ProjectsChart | `Widgets/Projects/ProjectsChart.php` |
+| 14 | ProjectRiskMatrixWidget | `Widgets/Projects/ProjectRiskMatrixWidget.php` |
+| 15 | ProjectTimelineWidget | `Widgets/Projects/ProjectTimelineWidget.php` |
+| null | ProjectKpiWidget, ProjectFinancialWidget | footer ViewProject uniquement |
+
+> **Règle :** Les widgets dans `Widgets/Projects/` visibles sur le dashboard global doivent avoir `$sort ≥ 13`.
+
+---
+
+*Document mis à jour le 2026-05-20.*

@@ -12,7 +12,7 @@ class ManifestationAlertWidget extends TableWidget
 {
     protected static ?string $heading = 'Alertes Manifestations';
 
-    protected static ?int $sort = 4;
+    protected static ?int $sort = 9;
 
     protected int|string|array $columnSpan = [
         'md' => 2,

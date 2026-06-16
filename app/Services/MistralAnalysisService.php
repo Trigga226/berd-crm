@@ -79,6 +79,64 @@ class MistralAnalysisService
     }
 
     /**
+     * Analyse un AvisManifestation (PDF + description) et extrait :
+     * domains[], summary (string), score (0-10).
+     */
+    public function analyzeAvis(\App\Models\AvisManifestation $avis): array
+    {
+        $content = $avis->description ?? '';
+
+        if ($avis->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($avis->file_path)) {
+            try {
+                $parser  = new \Smalot\PdfParser\Parser();
+                $pdf     = $parser->parseFile(\Illuminate\Support\Facades\Storage::disk('public')->path($avis->file_path));
+                $content .= "\n\n" . substr($pdf->getText(), 0, 6000);
+            } catch (\Exception $e) {
+                Log::warning('AvisManifestation PDF parse failed: ' . $e->getMessage());
+            }
+        }
+
+        if (empty(trim($content))) {
+            throw new Exception("Aucun contenu disponible pour l'analyse (ni description, ni PDF).");
+        }
+
+        $domains = implode(', ', array_keys(\App\Utils\Domaines::$DOMAINES));
+
+        $systemPrompt = <<<PROMPT
+Tu es un expert en analyse d'appels à manifestation d'intérêt. Analyse le texte suivant et réponds UNIQUEMENT avec un objet JSON valide (sans markdown, sans explications) contenant :
+- "domains": un tableau de 1 à 5 domaines choisis parmi cette liste exacte: [{$domains}]
+- "summary": un résumé exécutif en français de 3 à 5 phrases
+- "score": un nombre décimal entre 0 et 10 représentant la pertinence pour un cabinet d'ingénierie conseil africain
+
+Réponds uniquement avec du JSON pur, exemple: {"domains":["BTP","Hydraulique"],"summary":"...","score":7.5}
+PROMPT;
+
+        try {
+            $response = $this->chat([
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user',   'content' => $content],
+            ]);
+
+            $rawContent = $response->json('choices.0.message.content') ?? '{}';
+            $cleanContent = trim(preg_replace('/^```json\s*|\s*```$/s', '', $rawContent));
+            $result = json_decode($cleanContent, true);
+
+            if (!is_array($result)) {
+                throw new Exception("Réponse IA non parseable : {$rawContent}");
+            }
+
+            return [
+                'domains' => array_filter((array) ($result['domains'] ?? []), fn($d) => isset(\App\Utils\Domaines::$DOMAINES[$d])),
+                'summary' => $result['summary'] ?? '',
+                'score'   => is_numeric($result['score'] ?? null) ? round((float) $result['score'], 1) : null,
+            ];
+        } catch (Exception $e) {
+            Log::error('MistralAnalysisService::analyzeAvis failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
      * Backward compatibility wrapper for simple analysis.
      */
     public function analyzeCandidates(array $experts, string $criteria): string

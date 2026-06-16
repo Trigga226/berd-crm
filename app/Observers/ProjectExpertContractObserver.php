@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\ProjectExpertContract;
 use App\Observers\Concerns\LogsToSecureView;
+use Illuminate\Support\Facades\Cache;
 
 class ProjectExpertContractObserver
 {
@@ -14,8 +15,8 @@ class ProjectExpertContractObserver
      */
     public function created(ProjectExpertContract $projectExpertContract): void
     {
-        // Recalcul du budget consommé du projet
         $projectExpertContract->project?->updateCalculations();
+        Cache::increment('berd_stats_version');
 
         $expertName = $projectExpertContract->expert
             ? "{$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}"
@@ -34,6 +35,7 @@ class ProjectExpertContractObserver
     public function updated(ProjectExpertContract $projectExpertContract): void
     {
         $projectExpertContract->project?->updateCalculations();
+        Cache::increment('berd_stats_version');
 
         $expertName = $projectExpertContract->expert
             ? "{$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}"
@@ -52,6 +54,7 @@ class ProjectExpertContractObserver
     public function deleted(ProjectExpertContract $projectExpertContract): void
     {
         $projectExpertContract->project?->updateCalculations();
+        Cache::increment('berd_stats_version');
 
         $expertName = $projectExpertContract->expert
             ? "{$projectExpertContract->expert->first_name} {$projectExpertContract->expert->last_name}"

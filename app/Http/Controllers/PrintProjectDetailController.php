@@ -14,7 +14,6 @@ class PrintProjectDetailController extends Controller
             'deliverables' => fn($q) => $q->orderBy('planned_date'),
             'risks' => fn($q) => $q->whereIn('status', ['identified', 'mitigated', 'occurred']),
             'invoices',
-            'teamMembers',
         ]);
 
         return view('projects.print-detail', [
