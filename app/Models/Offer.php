@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Slimani\MediaManager\Concerns\InteractsWithMediaFiles;
@@ -34,6 +35,19 @@ class Offer extends Model
         'general_note' => 'integer',
     ];
 
+    /**
+     * Évite de stocker une chaîne vide (qui casserait la règle « in » des Select).
+     */
+    protected function result(): Attribute
+    {
+        return Attribute::set(fn($value) => ($value === '' || $value === null) ? null : $value);
+    }
+
+    protected function submissionMode(): Attribute
+    {
+        return Attribute::set(fn($value) => ($value === '' || $value === null) ? null : $value);
+    }
+
     public function client()
     {
         return $this->belongsTo(Client::class);
@@ -57,6 +71,28 @@ class Offer extends Model
     public function documents()
     {
         return $this->hasMany(OfferDocument::class);
+    }
+
+    /**
+     * Pièces de l'offre technique, dans l'ordre défini par l'utilisateur.
+     */
+    public function technicalDocuments()
+    {
+        return $this->hasMany(OfferDocument::class)
+            ->where('category', 'technical')
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
+    /**
+     * Pièces de l'offre financière, dans l'ordre défini par l'utilisateur.
+     */
+    public function financialDocuments()
+    {
+        return $this->hasMany(OfferDocument::class)
+            ->where('category', 'financial')
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     public function partners()

@@ -69,7 +69,7 @@ class ArchiveService
      */
     public function archiverOffre(Offer $offer): Archive
     {
-        $offer->loadMissing('documents', 'technicalOffer.documents', 'financialOffer.documents', 'manifestation');
+        $offer->loadMissing('documents', 'technicalDocuments', 'financialDocuments', 'manifestation');
 
         $annee   = $offer->created_at->year;
         $domaine = $this->formatDomaine(
@@ -84,20 +84,19 @@ class ArchiveService
             $fichiers[] = ['nom' => 'Dossier de participation', 'type' => 'dp', 'chemin' => $offer->dp_path];
         }
 
-        foreach ($offer->documents as $doc) {
-            $fichiers[] = ['nom' => $doc->original_name, 'type' => $doc->type, 'chemin' => $doc->path];
+        // Pièces annexes (hors offre technique / financière)
+        foreach ($offer->documents->whereNull('category') as $doc) {
+            $fichiers[] = ['nom' => $doc->original_name ?? $doc->label, 'type' => $doc->type, 'chemin' => $doc->path];
         }
 
-        if ($offer->technicalOffer) {
-            foreach ($offer->technicalOffer->documents as $doc) {
-                $fichiers[] = ['nom' => $doc->original_name, 'type' => 'technique_' . $doc->type, 'chemin' => $doc->path];
-            }
+        // Offre technique — intitulés et ordre définis par l'utilisateur
+        foreach ($offer->technicalDocuments as $doc) {
+            $fichiers[] = ['nom' => $doc->label ?? $doc->original_name, 'type' => 'technique_' . ($doc->type ?? $doc->id), 'chemin' => $doc->path];
         }
 
-        if ($offer->financialOffer) {
-            foreach ($offer->financialOffer->documents as $doc) {
-                $fichiers[] = ['nom' => $doc->original_name, 'type' => 'financier_' . $doc->type, 'chemin' => $doc->path];
-            }
+        // Offre financière — intitulés et ordre définis par l'utilisateur
+        foreach ($offer->financialDocuments as $doc) {
+            $fichiers[] = ['nom' => $doc->label ?? $doc->original_name, 'type' => 'financier_' . ($doc->type ?? $doc->id), 'chemin' => $doc->path];
         }
 
         return Archive::updateOrCreate(

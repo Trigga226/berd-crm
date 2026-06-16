@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             // ── Données référentielles ────────────────────────────────
             ClientSeeder::class,
             PartnerSeeder::class,
+            BailleurSeeder::class,
             ExpertSeeder::class,
             AdministrativeDocumentSeeder::class,
 

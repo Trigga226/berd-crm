@@ -69,7 +69,7 @@ class ProjectStatsOverview extends BaseWidget
                 ->chart([1, 2, 3, 2, 1, 4, 3])
                 ->color($stats['over_budget'] > 0 ? 'danger' : 'success'),
 
-            Stat::make('Budget Total', number_format($stats['total_budget'], 0, ',', ' ') . ' XOF')
+            Stat::make('Coût du Marché', number_format($stats['total_budget'], 0, ',', ' ') . ' XOF')
                 ->description(number_format($stats['consumed_budget'], 0, ',', ' ') . ' XOF consommés (' . round($stats['budget_utilization'], 1) . '%)')
                 ->descriptionIcon('heroicon-o-banknotes')
                 ->chart([15, 25, 45, 30, 60, 80, 75])

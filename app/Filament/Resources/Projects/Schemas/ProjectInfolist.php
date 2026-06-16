@@ -86,6 +86,26 @@ class ProjectInfolist
                     ->columns(3)
                     ->collapsible(),
 
+                // Bailleurs de fonds
+                ComponentsSection::make('Bailleurs de fonds')
+                    ->schema([
+                        TextEntry::make('bailleurs')
+                            ->label('')
+                            ->state(fn($record) => $record->bailleurs->map(function ($b) {
+                                $label = $b->acronym ?: $b->name;
+                                if ($b->pivot?->is_lead) {
+                                    $label .= ' (chef de file)';
+                                }
+                                return $label;
+                            })->all())
+                            ->badge()
+                            ->color(fn($state) => str_contains((string) $state, 'chef de file') ? 'success' : 'info')
+                            ->columnSpanFull()
+                            ->placeholder('Aucun bailleur associé'),
+                    ])
+                    ->collapsible()
+                    ->visible(fn($record) => $record->bailleurs->isNotEmpty()),
+
                 // Planning
                 ComponentsSection::make('Planning')
                     ->schema([
@@ -122,7 +142,7 @@ class ProjectInfolist
                 ComponentsSection::make('Budget')->visible(fn (): bool => Auth::user()->canViewFinancials())
                     ->schema([
                         TextEntry::make('total_budget')
-                            ->label('Budget Total')
+                            ->label('Coût du Marché')
                             ->money('XOF')
                             ->icon('heroicon-o-banknotes')
                             ->weight(FontWeight::Bold),
@@ -130,7 +150,20 @@ class ProjectInfolist
                             ->label('Budget Consommé')
                             ->money('XOF')
                             ->icon('heroicon-o-banknotes')
+                            ->tooltip('Coût réel des experts + frais remboursables')
                             ->color(fn($record) => $record->consumed_budget > $record->total_budget ? 'danger' : 'success'),
+                        TextEntry::make('experts_real_cost')
+                            ->label('— dont Coût Experts (réel)')
+                            ->state(fn($record) => $record->expertsRealCost())
+                            ->money('XOF')
+                            ->icon('heroicon-o-user-group')
+                            ->color('gray'),
+                        TextEntry::make('reimbursable_expenses')
+                            ->label('— dont Frais Remboursables')
+                            ->state(fn($record) => $record->reimbursableExpensesTotal())
+                            ->money('XOF')
+                            ->icon('heroicon-o-receipt-percent')
+                            ->color('gray'),
                         TextEntry::make('budget_variance')
                             ->label('Variance Budgétaire')
                             ->state(fn($record) => $record->budgetVariance())

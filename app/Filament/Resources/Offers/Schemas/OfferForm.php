@@ -5,11 +5,13 @@ namespace App\Filament\Resources\Offers\Schemas;
 use App\Filament\Resources\Clients\Schemas\ClientForm;
 use App\Models\Client; // Add this import for client lookup
 use App\Models\Manifestation;
+use App\Support\OfferDocumentSections;
 use App\Utils\Pays;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -21,7 +23,6 @@ use Filament\Schemas\Components\Section as ComponentsSection;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Slimani\MediaManager\Form\MediaPicker;
 
@@ -226,57 +227,7 @@ class OfferForm
                                             ]),
                                     ]),
 
-                                Tabs::make('Documents Techniques')
-                                    ->tabs([
-                                        Tabs\Tab::make('Tech 0: Présentation')
-                                            ->schema([
-                                                self::getDocUpload('tech_cover', 'Page de garde', 'offre technique/presentation', 'technicalOffer'),
-                                                self::getDocUpload('tech_summary', 'Sommaire', 'offre technique/presentation', 'technicalOffer'),
-                                            ]),
-                                        Tabs\Tab::make('Tech 1: Admin')
-                                            ->schema([
-                                                self::getDocUpload('tech_1_1', 'Lettre de soumission', 'offre technique/tech 1', 'technicalOffer'),
-                                                self::getDocUpload('tech_1_2', 'Accord de groupement', 'offre technique/tech 1', 'technicalOffer')
-                                                    ->visible(fn(Get $get) => $get('../../is_consortium')),
-                                                self::getDocUpload('tech_1_3', 'Pouvoir Habilitation / Statut Juridique', 'offre technique/tech 1', 'technicalOffer'),
-                                                self::getDocUpload('tech_1_4', 'Pouvoir Chef de file', 'offre technique/tech 1', 'technicalOffer')
-                                                    ->visible(fn(Get $get) => $get('../../is_consortium')),
-                                                self::getDocUpload('tech_1_5', 'Pièces Admin', 'offre technique/tech 1', 'technicalOffer'),
-                                            ]),
-                                        Tabs\Tab::make('Tech 2: Orga & Exp')
-                                            ->schema([
-                                                self::getDocUpload('tech_2_a', 'Organisation', 'offre technique/tech 2', 'technicalOffer'),
-                                                self::getDocUpload('tech_2_b', 'Expérience', 'offre technique/tech 2', 'technicalOffer'),
-                                            ]),
-                                        Tabs\Tab::make('Tech 3: Commentaires')
-                                            ->schema([
-                                                self::getDocUpload('tech_3_a', 'Sur TDR', 'offre technique/tech 3', 'technicalOffer'),
-                                                self::getDocUpload('tech_3_b', 'Sur Personnel/Prestations', 'offre technique/tech 3', 'technicalOffer'),
-                                            ]),
-                                        Tabs\Tab::make('Tech 4: Méthodologie')
-                                            ->schema([
-                                                self::getDocUpload('tech_4', 'Méthodologie', 'offre technique/tech 4', 'technicalOffer'),
-                                            ]),
-                                        Tabs\Tab::make('Tech 5: Programme')
-                                            ->schema([
-                                                self::getDocUpload('tech_5', 'Programme et Calendrier', 'offre technique/tech 5', 'technicalOffer'),
-                                            ]),
-                                        Tabs\Tab::make('Tech 6: Équipe')
-                                            ->schema([
-                                                self::getDocUpload('tech_6_1', 'Composition Équipe', 'offre technique/tech 6', 'technicalOffer'),
-                                                self::getDocUpload('tech_6_2', 'CVs et Disponibilité', 'offre technique/tech 6', 'technicalOffer'),
-                                            ]),
-                                        Tabs\Tab::make('Tech 7: Code')
-                                            ->schema([
-                                                self::getDocUpload('tech_7', 'Code de Conduite', 'offre technique/tech 7', 'technicalOffer'),
-                                            ]),
-                                        Tabs\Tab::make('Autres')
-                                            ->schema([
-                                                self::getDocUpload('tech_other_1', 'Document Additionnel 1', 'offre technique/autres', 'technicalOffer'),
-                                                self::getDocUpload('tech_other_2', 'Document Additionnel 2', 'offre technique/autres', 'technicalOffer'),
-                                                self::getDocUpload('tech_other_3', 'Document Additionnel 3', 'offre technique/autres', 'technicalOffer'),
-                                            ]),
-                                    ]),
+                                self::documentsRepeater('technical', 'technicalDocuments', 'offre technique'),
                             ]),
 
                         // Onglet Offre Financière
@@ -322,27 +273,7 @@ class OfferForm
                                             ]),
                                     ]),
 
-                                Tabs::make('Documents Financiers')
-                                    ->tabs([
-                                        Tabs\Tab::make('Fine 0: Présentation')
-                                            ->schema([
-                                                self::getDocUpload('fine_cover', 'Page de garde', 'offre financiere/presentation', 'financialOffer'),
-                                            ]),
-                                        Tabs\Tab::make('Fine 1-5')
-                                            ->schema([
-                                                self::getDocUpload('fine_1', 'Lettre de soumission', 'offre financiere/fine 1', 'financialOffer'),
-                                                self::getDocUpload('fine_2', 'Tableau Récapitulatif', 'offre financiere/fine 2', 'financialOffer'),
-                                                self::getDocUpload('fine_3', 'Sous détail rémunération', 'offre financiere/fine 3', 'financialOffer'),
-                                                self::getDocUpload('fine_4', 'Autres dépenses', 'offre financiere/fine 4', 'financialOffer'),
-                                                self::getDocUpload('fine_5', 'Déclaration des coûts', 'offre financiere/fine 5', 'financialOffer'),
-                                            ]),
-                                        Tabs\Tab::make('Autres')
-                                            ->schema([
-                                                self::getDocUpload('fine_other_1', 'Document Additionnel 1', 'offre financiere/autres', 'financialOffer'),
-                                                self::getDocUpload('fine_other_2', 'Document Additionnel 2', 'offre financiere/autres', 'financialOffer'),
-                                                self::getDocUpload('fine_other_3', 'Document Additionnel 3', 'offre financiere/autres', 'financialOffer'),
-                                            ]),
-                                    ]),
+                                self::documentsRepeater('financial', 'financialDocuments', 'offre financiere'),
                             ]),
 
                         // Onglet Médiathèque
@@ -377,25 +308,63 @@ class OfferForm
             ]);
     }
 
-    public static function getDocUpload(string $type, string $label, string $subfolder, string $relation = null): FileUpload
+    /**
+     * Répéteur réordonnable des pièces d'une offre (technique ou financière).
+     *
+     * Chaque ligne = une pièce dont l'utilisateur peut :
+     *  - renommer l'intitulé librement (champ « label ») ;
+     *  - téléverser/remplacer le fichier PDF ;
+     *  - changer l'ordre par glisser-déposer (persisté dans « sort_order »).
+     *
+     * L'intitulé et l'ordre définis ici sont ceux respectés lors de la génération
+     * (compilation) des PDF par App\Services\OfferPdfService.
+     */
+    public static function documentsRepeater(string $category, string $relation, string $subfolder): Repeater
     {
-        $fieldName = "documents_{$type}";
-        if ($relation) {
-            $fieldName = "{$relation}.{$fieldName}";
-        }
+        return Repeater::make($relation)
+            ->relationship($relation)
+            ->label('Pièces du dossier')
+            ->helperText('Renommez les intitulés et glissez les pièces pour définir l\'ordre de génération du PDF compilé.')
+            ->schema([
+                Hidden::make('category')->default($category),
+                Hidden::make('type'),
+                TextInput::make('label')
+                    ->label('Intitulé')
+                    ->required()
+                    ->maxLength(255)
+                    ->columnSpan(2),
+                FileUpload::make('path')
+                    ->label('Fichier (PDF)')
+                    ->directory(fn($livewire) => self::documentDirectory($livewire, $subfolder))
+                    ->preserveFilenames()
+                    ->storeFileNamesIn('original_name')
+                    ->acceptedFileTypes(['application/pdf'])
+                    ->downloadable()
+                    ->openable()
+                    ->columnSpan(3),
+            ])
+            ->columns(5)
+            ->orderColumn('sort_order')
+            ->reorderable()
+            ->reorderableWithButtons()
+            ->collapsible()
+            ->cloneable()
+            ->itemLabel(fn(array $state): ?string => $state['label'] ?? 'Nouvelle pièce')
+            ->addActionLabel('Ajouter une pièce')
+            ->default(OfferDocumentSections::defaults($category))
+            ->columnSpanFull();
+    }
 
-        return FileUpload::make($fieldName)
-            ->label($label)
-            ->directory(function (Get $get, ?Model $record) use ($subfolder) {
-                // Try to get title from record (Edit mode), otherwise from form state (Create mode).
-                // Note: On Create, title might be empty initially, defaulting to 'temp'.
-                $title = $record?->title ?? $get('../../title');
-                $slug = Str::slug($title) ?: 'temp';
-                return 'offres/' . $slug . '/' . $subfolder . '/fichiers';
-            })
-            ->preserveFilenames()
-            ->acceptedFileTypes(['application/pdf'])
-            ->downloadable()
-            ->openable();
+    /**
+     * Dossier de stockage d'une pièce, basé sur le slug du titre de l'offre.
+     * Retombe sur « temp » tant que le titre n'est pas saisi ; le fichier est
+     * ensuite déplacé automatiquement (cf. App\Models\OfferDocument).
+     */
+    protected static function documentDirectory($livewire, string $subfolder): string
+    {
+        $title = data_get($livewire, 'data.title');
+        $slug  = Str::slug($title) ?: 'temp';
+
+        return 'offres/' . $slug . '/' . $subfolder . '/fichiers';
     }
 }

@@ -70,6 +70,7 @@ class ProjectResource extends Resource
         return [
             RelationManagers\DeliverablesRelationManager::class,
             RelationManagers\ExpertContractsRelationManager::class,
+            RelationManagers\ExpensesRelationManager::class,
             RelationManagers\AmendmentsRelationManager::class,
             RelationManagers\InvoicesRelationManager::class,
             RelationManagers\ActivitiesRelationManager::class,

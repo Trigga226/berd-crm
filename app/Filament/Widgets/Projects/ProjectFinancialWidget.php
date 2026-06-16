@@ -40,7 +40,7 @@ class ProjectFinancialWidget extends BaseWidget
                 ->descriptionIcon('heroicon-m-check-badge')
                 ->color($recoveryRate >= 90 ? 'success' : ($recoveryRate >= 70 ? 'warning' : 'danger')),
 
-            Stat::make('Créances Clients', number_format($unpaidAmount, 0, ',', ' ') . ' XOF')
+            Stat::make('Créance Projet', number_format($unpaidAmount, 0, ',', ' ') . ' XOF')
                 ->description('Reste à encaisser sur factures émises')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color($unpaidAmount > 0 ? 'warning' : 'success'),

@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Filament\Resources\Clients\RelationManagers;
+namespace App\Filament\Resources\Bailleurs\RelationManagers;
 
 use App\Filament\Resources\Projects\ProjectResource;
 use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -13,7 +14,7 @@ class ProjectsRelationManager extends RelationManager
 {
     protected static string $relationship = 'projects';
 
-    protected static ?string $title = 'Projets';
+    protected static ?string $title = 'Projets financés';
 
     public function form(Schema $schema): Schema
     {
@@ -27,13 +28,10 @@ class ProjectsRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('code')
                     ->label('Code')
-                    ->badge()
-                    ->color('gray')
-                    ->copyable()
-                    ->sortable(),
+                    ->searchable(),
 
                 TextColumn::make('title')
-                    ->label('Titre')
+                    ->label('Projet')
                     ->limit(40)
                     ->searchable()
                     ->url(fn($record) => ProjectResource::getUrl('view', ['record' => $record])),
@@ -58,23 +56,16 @@ class ProjectsRelationManager extends RelationManager
                         default       => $state,
                     }),
 
-                TextColumn::make('execution_percentage')
-                    ->label('Avancement')
-                    ->suffix('%')
-                    ->sortable(),
+                IconColumn::make('pivot.is_lead')
+                    ->label('Chef de file')
+                    ->boolean(),
 
-                TextColumn::make('total_budget')
-                    ->label('Coût du Marché')
-                    ->numeric(thousandsSeparator: ' ')
-                    ->suffix(' XOF')
-                    ->sortable(),
-
-                TextColumn::make('planned_end_date')
-                    ->label('Fin Prévue')
-                    ->date('d/m/Y')
-                    ->sortable(),
+                TextColumn::make('pivot.financing_amount')
+                    ->label('Financement')
+                    ->money('XOF')
+                    ->placeholder('—'),
             ])
-            ->defaultSort('planned_end_date', 'desc')
+            ->defaultSort('created_at', 'desc')
             ->recordActions([
                 ViewAction::make()
                     ->url(fn($record) => ProjectResource::getUrl('view', ['record' => $record])),

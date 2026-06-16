@@ -76,12 +76,20 @@ class ProjectsTable
                     ->date('d/m/Y')
                     ->sortable(),
                 TextColumn::make('total_budget')
-                    ->label('Budget')
+                    ->label('Coût du Marché')
                     ->money('XOF')
                     ->sortable(),
                 TextColumn::make('projectManagerUser.name')
                     ->label('Chef de Projet')
                     ->default('—'),
+                TextColumn::make('bailleurs.acronym')
+                    ->label('Bailleurs')
+                    ->badge()
+                    ->color('info')
+                    ->separator(',')
+                    ->limitList(2)
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label('Créé le')
                     ->dateTime('d/m/Y H:i')

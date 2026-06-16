@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -52,6 +53,19 @@ class FinancialOffer extends Model
             }
             $model->pendingDocuments = [];
         });
+    }
+
+    /**
+     * Évite de stocker une chaîne vide (qui casserait la règle « in » des Select).
+     */
+    protected function result(): Attribute
+    {
+        return Attribute::set(fn($value) => ($value === '' || $value === null) ? null : $value);
+    }
+
+    protected function submissionMode(): Attribute
+    {
+        return Attribute::set(fn($value) => ($value === '' || $value === null) ? null : $value);
     }
 
     public function offer()

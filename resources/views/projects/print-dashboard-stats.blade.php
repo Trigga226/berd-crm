@@ -354,7 +354,7 @@
                 </div>
                 <div class="stat-card" style="background: #f9fafb;">
                     <div class="stat-value">{{ number_format($projectStats['total_budget'], 0, ',', ' ') }} <small>XOF</small></div>
-                    <div class="stat-label">Budget Total</div>
+                    <div class="stat-label">Coût du Marché</div>
                 </div>
                 <div class="stat-card" style="background: #ecfdf5; border-color: #10b981;">
                     <div class="stat-value" style="color: #047857;">{{ round($financialStats['recovery_rate'], 1) }}%</div>

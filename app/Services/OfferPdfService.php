@@ -12,48 +12,14 @@ class OfferPdfService
     protected array $tempFiles  = [];
     protected int   $totalPages = 0;
 
-    protected array $technicalOrder = [
-        'tech_cover',
-        'tech_summary',
-        'tech_1_1',
-        'tech_1_2',
-        'tech_1_3',
-        'tech_1_4',
-        'tech_1_5',
-        'tech_2_a',
-        'tech_2_b',
-        'tech_3_a',
-        'tech_3_b',
-        'tech_4',
-        'tech_5',
-        'tech_6_1',
-        'tech_6_2',
-        'tech_7',
-        'tech_other_1',
-        'tech_other_2',
-        'tech_other_3',
-    ];
-
-    protected array $financialOrder = [
-        'fine_cover',
-        'fine_1',
-        'fine_2',
-        'fine_3',
-        'fine_4',
-        'fine_5',
-        'fine_other_1',
-        'fine_other_2',
-        'fine_other_3',
-    ];
-
     public function generateTechnicalOfferPdf(Offer $offer)
     {
-        return $this->mergeDocuments($offer, $this->technicalOrder, 'Offre_Technique_Complete.pdf');
+        return $this->mergeDocuments($offer, 'technical', 'Offre_Technique_Complete.pdf');
     }
 
     public function generateFinancialOfferPdf(Offer $offer)
     {
-        return $this->mergeDocuments($offer, $this->financialOrder, 'Offre_Financiere_Complete.pdf');
+        return $this->mergeDocuments($offer, 'financial', 'Offre_Financiere_Complete.pdf');
     }
 
     public function saveToStorage(Offer $offer, string $type = 'technical'): ?string
@@ -61,20 +27,14 @@ class OfferPdfService
         $this->tempFiles  = [];
         $this->totalPages = 0;
 
-        $order    = $type === 'financial' ? $this->financialOrder : $this->technicalOrder;
+        $category = $type === 'financial' ? 'financial' : 'technical';
         $label    = $type === 'financial' ? 'financiere' : 'technique';
         $filename = "offers/generated/offre_{$label}_{$offer->id}.pdf";
 
         $pdf = new Fpdi();
 
-        foreach ($order as $docType) {
-            $path = $offer->documents()->where('type', $docType)->value('path');
-
-            if (!$path) {
-                continue;
-            }
-
-            $this->addPdfToMerge($pdf, $path, "[{$docType}]");
+        foreach ($this->orderedDocuments($offer, $category) as $document) {
+            $this->addPdfToMerge($pdf, $document->path, "[{$document->label}]");
         }
 
         Log::info("OfferPdfService ({$label}): {$this->totalPages} page(s) importée(s) pour offre #{$offer->id}");
@@ -93,21 +53,15 @@ class OfferPdfService
         return $filename;
     }
 
-    protected function mergeDocuments(Offer $offer, array $order, string $outputName)
+    protected function mergeDocuments(Offer $offer, string $category, string $outputName)
     {
         $this->tempFiles  = [];
         $this->totalPages = 0;
 
         $pdf = new Fpdi();
 
-        foreach ($order as $docType) {
-            $path = $offer->documents()->where('type', $docType)->value('path');
-
-            if (!$path) {
-                continue;
-            }
-
-            $this->addPdfToMerge($pdf, $path, "[{$docType}]");
+        foreach ($this->orderedDocuments($offer, $category) as $document) {
+            $this->addPdfToMerge($pdf, $document->path, "[{$document->label}]");
         }
 
         Log::info("OfferPdfService (download): {$this->totalPages} page(s) importée(s) pour offre #{$offer->id}");
@@ -121,6 +75,23 @@ class OfferPdfService
         return response()->streamDownload(function () use ($pdf) {
             $pdf->Output('D', 'merged.pdf');
         }, $outputName);
+    }
+
+    /**
+     * Pièces d'une catégorie ('technical' | 'financial') possédant un fichier,
+     * dans l'ordre défini par l'utilisateur (intitulé + sort_order).
+     *
+     * @return \Illuminate\Support\Collection<int, \App\Models\OfferDocument>
+     */
+    protected function orderedDocuments(Offer $offer, string $category)
+    {
+        return $offer->documents()
+            ->where('category', $category)
+            ->whereNotNull('path')
+            ->where('path', '!=', '')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
     }
 
     protected function addPdfToMerge(Fpdi $pdf, string $path, string $label = ''): void

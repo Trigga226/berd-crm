@@ -7,6 +7,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
@@ -99,7 +100,7 @@ class ProjectForm
                         ComponentsTabs\Tab::make('Budget')->visible(fn (): bool => Auth::user()->canViewFinancials())
                             ->schema([
                                 TextInput::make('total_budget')
-                                    ->label('Budget Total')
+                                    ->label('Coût du Marché')
                                     ->numeric()
                                     ->prefix('XOF')
                                     ->step(0.01),
@@ -112,6 +113,35 @@ class ProjectForm
                                     ->disabled(),
                             ])
                             ->columns(2),
+
+                        ComponentsTabs\Tab::make('Bailleurs & Financement')
+                            ->schema([
+                                Repeater::make('projectBailleurs')
+                                    ->relationship('projectBailleurs')
+                                    ->label('Bailleurs de fonds (co-financement)')
+                                    ->schema([
+                                        Select::make('bailleur_id')
+                                            ->label('Bailleur')
+                                            ->relationship('bailleur', 'name')
+                                            ->getOptionLabelFromRecordUsing(fn($record) => $record->acronym ? "{$record->acronym} — {$record->name}" : $record->name)
+                                            ->searchable()
+                                            ->preload()
+                                            ->required()
+                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                            ->columnSpan(2),
+                                        TextInput::make('financing_amount')
+                                            ->label('Montant financé')
+                                            ->numeric()
+                                            ->prefix('XOF')
+                                            ->step(0.01),
+                                        Toggle::make('is_lead')
+                                            ->label('Chef de file')
+                                            ->inline(false),
+                                    ])
+                                    ->columns(4)
+                                    ->defaultItems(0)
+                                    ->addActionLabel('Ajouter un bailleur'),
+                            ]),
 
                         ComponentsTabs\Tab::make('Chef de Projet & Contrat')
                             ->schema([

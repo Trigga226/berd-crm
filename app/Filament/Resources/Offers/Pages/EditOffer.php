@@ -86,13 +86,8 @@ class EditOffer extends EditRecord
         $data['technicalOffer'] = $offer->technicalOffer?->attributesToArray() ?? [];
         $data['financialOffer'] = $offer->financialOffer?->attributesToArray() ?? [];
 
-        foreach ($offer->documents as $doc) {
-            if (str_starts_with($doc->type, 'tech_')) {
-                $data['technicalOffer']['documents_' . $doc->type] = $doc->path;
-            } elseif (str_starts_with($doc->type, 'fine_')) {
-                $data['financialOffer']['documents_' . $doc->type] = $doc->path;
-            }
-        }
+        // Les pièces (intitulés + ordre) sont chargées par les répéteurs relationnels
+        // technicalDocuments / financialDocuments du formulaire.
 
         return $data;
     }

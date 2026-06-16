@@ -108,7 +108,7 @@
         <div class="section-title">Situation Financière</div>
         <table style="margin-bottom: 15px;">
             <tr>
-                <td style="width: 25%; font-weight: bold; background: #f9fafb;">Budget Total</td>
+                <td style="width: 25%; font-weight: bold; background: #f9fafb;">Coût du Marché</td>
                 <td>{{ number_format($project->total_budget, 0, ',', ' ') }} XOF</td>
                 <td style="width: 25%; font-weight: bold; background: #f9fafb;">Budget Consommé</td>
                 <td style="color: {{ $project->consumed_budget > $project->total_budget ? '#ef4444' : 'inherit' }}">

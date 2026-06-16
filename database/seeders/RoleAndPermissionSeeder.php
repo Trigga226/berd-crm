@@ -21,6 +21,7 @@ class RoleAndPermissionSeeder extends Seeder
         'AdministrativeDocument',
         'Archive',
         'AvisManifestation',
+        'Bailleur',
         'Client',
         'Department',
         'Expert',

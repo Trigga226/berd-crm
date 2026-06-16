@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Project extends Model
 {
@@ -98,6 +99,32 @@ class Project extends Model
         return $this->hasMany(ProjectReport::class);
     }
 
+    /**
+     * Frais remboursables du projet.
+     */
+    public function expenses()
+    {
+        return $this->hasMany(ProjectExpense::class);
+    }
+
+    /**
+     * Bailleurs de fonds finançant le projet (co-financement).
+     */
+    public function bailleurs()
+    {
+        return $this->belongsToMany(Bailleur::class, 'bailleur_project')
+            ->withPivot('financing_amount', 'is_lead')
+            ->withTimestamps();
+    }
+
+    /**
+     * Lignes de co-financement (pivot) — utilisé par le formulaire (répéteur).
+     */
+    public function projectBailleurs()
+    {
+        return $this->hasMany(ProjectBailleur::class);
+    }
+
     // Accessors & Business Logic
     public function isDelayed(): bool
     {
@@ -110,6 +137,23 @@ class Project extends Model
         }
 
         return false;
+    }
+
+    /**
+     * Coût réel des contrats experts : taux journalier × jours effectivement travaillés.
+     */
+    public function expertsRealCost(): float
+    {
+        return (float) $this->expertContracts()
+            ->sum(DB::raw('daily_rate * COALESCE(actual_days, 0)'));
+    }
+
+    /**
+     * Total des frais remboursables du projet.
+     */
+    public function reimbursableExpensesTotal(): float
+    {
+        return (float) $this->expenses()->sum('amount');
     }
 
     public function budgetVariance(): float
@@ -190,8 +234,10 @@ class Project extends Model
             }
         }
 
-        // Consumed Budget
-        $this->consumed_budget = $this->invoices()->sum('paid_amount');
+        // Budget consommé = coût réel des contrats experts (taux journalier × jours
+        // effectifs) + total des frais remboursables. Aucun autre poste n'entre en
+        // compte (les factures sont des revenus, pas des coûts).
+        $this->consumed_budget = $this->expertsRealCost() + $this->reimbursableExpensesTotal();
 
         $this->saveQuietly();
     }

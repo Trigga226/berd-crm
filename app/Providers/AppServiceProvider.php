@@ -28,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
         $models = [
             'AdministrativeDocument',
             'AvisManifestation',
+            'Bailleur',
             'Client',
             'Department',
             'Expert',
@@ -49,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
             'ProjectActivity',
             'ProjectAmendment',
             'ProjectDeliverable',
+            'ProjectExpense',
             'ProjectExpertContract',
             'ProjectInvoice',
             'ProjectReport',
