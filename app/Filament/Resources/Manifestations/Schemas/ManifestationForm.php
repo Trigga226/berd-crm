@@ -277,7 +277,6 @@ class ManifestationForm
                         Hidden::make('type')->default($type),
                         FileUpload::make('file_path')
                             ->label('Fichier PDF')
-                            ->required()
                             ->acceptedFileTypes(['application/pdf'])
                             ->directory(fn(Get $get) => 'manifestations/' . ($get('../../avis_manifestation_id') ?? 'temp') . '/' . $type)
                             ->preserveFilenames(),

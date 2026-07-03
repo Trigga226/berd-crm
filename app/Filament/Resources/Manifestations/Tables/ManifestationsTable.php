@@ -107,10 +107,10 @@ class ManifestationsTable
                                 '2_years' => '2 Ans',
                                 'all' => 'Toutes les années',
                             ])
-                            ->default('1_month'),
+                            ->default('all'),
                     ])
                     ->query(function (Builder $query, array $data) {
-                        $value = $data['value'] ?? '1_month';
+                        $value = $data['value'] ?? 'all';
                         $start = match ($value) {
                             '1_month' => now()->subMonth(),
                             '3_months' => now()->subMonths(3),
@@ -118,17 +118,18 @@ class ManifestationsTable
                             '1_year' => now()->subYear(),
                             '2_years' => now()->subYears(2),
                             'all' => null,
-                            default => now()->subMonth(),
+                            default => null,
                         };
                         if ($start) {
                             $query->where('created_at', '>=', $start);
                         }
                     })
                     ->indicateUsing(function (array $data): ?string {
-                        if (! ($data['value'] ?? null)) {
+                        $value = $data['value'] ?? null;
+                        if (! $value || $value === 'all') {
                             return null;
                         }
-                        return 'Période: ' . ($data['value']);
+                        return 'Période: ' . $value;
                     }),
                 \Filament\Tables\Filters\Filter::make('score_min')
                     ->form([

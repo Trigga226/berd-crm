@@ -330,7 +330,6 @@ class OfferForm
                 Hidden::make('type'),
                 TextInput::make('label')
                     ->label('Intitulé')
-                    ->required()
                     ->maxLength(255)
                     ->columnSpan(2),
                 FileUpload::make('path')
